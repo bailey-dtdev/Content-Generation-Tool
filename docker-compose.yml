@@ -1,0 +1,5 @@
+# Stub: local dev stack (postgres + backend + frontend). See docs/build-plan.md (Phase 1).
+# Implemented per architecture-design.md §5.2:
+#   postgres  — postgres:16, named volume, port 5432
+#   backend   — built from backend/Dockerfile, hot reload, port 8000
+#   frontend  — node:20, pnpm dev, port 5173

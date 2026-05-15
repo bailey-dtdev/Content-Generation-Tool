@@ -1,0 +1,3 @@
+# Stub: Fly.io app configuration. See docs/build-plan.md (Phase 15).
+# Full config in architecture-design.md §11.1: app content-gen-backend, region syd,
+# auto-stop/start machines, shared-cpu-1x/512mb, release_command = alembic upgrade head.

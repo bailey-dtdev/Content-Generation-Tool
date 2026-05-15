@@ -1,0 +1,2 @@
+# Stub: deploy backend to Fly.io on push to main. See docs/build-plan.md (Phase 14).
+# Implemented per architecture-design.md §12.2: flyctl deploy --remote-only (needs FLY_API_TOKEN).

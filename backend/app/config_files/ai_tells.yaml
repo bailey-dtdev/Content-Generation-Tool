@@ -1,0 +1,7 @@
+# Common AI tells — phrases the rule-based QA check flags (case-insensitive).
+# Stub: starter list. Expanded in docs/build-plan.md (Phase 10). See arch §6.10.1.
+phrases:
+  - delve
+  - tapestry
+  - navigate the landscape of
+  - in today's fast-paced world
