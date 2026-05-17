@@ -68,9 +68,9 @@ test suites to exist; a minimal CI can and should land sooner.
 
 Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 
-- [~] **Phase 0** — Repo scaffold & governance
-- [ ] **Phase 1** — Backend foundation
-- [ ] **Phase 2** — Database & migrations
+- [x] **Phase 0** — Repo scaffold & governance
+- [x] **Phase 1** — Backend foundation
+- [~] **Phase 2** — Database & migrations
 - [ ] **Phase 3** — Auth (Google SSO)
 - [ ] **Phase 4** — Frontend foundation
 - [ ] **Phase 5** — Client registry

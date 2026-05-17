@@ -1,4 +1,24 @@
-"""Stub: structlog configuration — JSON logs to stdout.
+"""structlog configuration — structured JSON logs to stdout.
 
-See docs/build-plan.md (Phase 1) and architecture-design.md §6.13.
+See architecture-design.md §6.13.
 """
+
+import logging
+
+import structlog
+
+
+def configure() -> None:
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
