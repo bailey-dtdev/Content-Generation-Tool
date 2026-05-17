@@ -1,4 +1,15 @@
-"""Stub: auth request/response schemas (current user, login).
+"""Auth API schemas."""
 
-See docs/build-plan.md (Phase 3).
-"""
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
+
+
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: str
+    name: str | None
+    picture_url: str | None
+    role: str

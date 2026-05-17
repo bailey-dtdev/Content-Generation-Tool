@@ -15,6 +15,7 @@ from app import logging as app_logging
 from app import sentry
 from app.config import settings
 from app.db import engine
+from app.routers import auth
 
 sentry.init()
 app_logging.configure()
@@ -40,3 +41,6 @@ app.add_middleware(
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
     return {"status": "ok", "git_sha": os.getenv("GIT_SHA", "unknown")}
+
+
+app.include_router(auth.router, prefix="/api/v1")

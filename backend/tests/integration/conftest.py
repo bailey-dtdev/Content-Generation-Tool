@@ -1,7 +1,7 @@
-"""Integration test fixtures — a real database session.
+"""Integration test fixtures — a real database.
 
-Each test gets a freshly created schema (built from the ORM metadata) and a
-session, torn down afterwards. Requires a reachable Postgres at DATABASE_URL.
+Requires a reachable Postgres at DATABASE_URL. `setup_database` builds a fresh
+schema per test from the ORM metadata; `db_session` adds a session on top.
 """
 
 from collections.abc import AsyncIterator
@@ -14,13 +14,18 @@ from app.models import Base
 
 
 @pytest_asyncio.fixture
-async def db_session() -> AsyncIterator[AsyncSession]:
+async def setup_database() -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    async with AsyncSessionLocal() as session:
-        yield session
+    yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     # Dispose so pooled connections don't outlive this test's event loop.
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_session(setup_database: None) -> AsyncIterator[AsyncSession]:
+    async with AsyncSessionLocal() as session:
+        yield session
