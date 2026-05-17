@@ -1,0 +1,3 @@
+# Stub: uv project + dependencies + ruff/mypy config. See docs/build-plan.md (Phase 1).
+# Dependencies enumerated in architecture-design.md §3 (Backend table).
+# mypy runs strict on app/; ruff handles lint + format.

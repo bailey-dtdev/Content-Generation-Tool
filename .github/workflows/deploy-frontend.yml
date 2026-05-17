@@ -1,0 +1,3 @@
+# Stub: deploy frontend to Netlify on push to main. See docs/build-plan.md (Phase 14).
+# Implemented per architecture-design.md §12.3 — may be unnecessary if Netlify's native
+# GitHub integration is used; keep only if CI-gated deploys are wanted.

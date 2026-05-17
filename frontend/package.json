@@ -1,0 +1,6 @@
+{
+  "_stub": "Frontend package manifest. See docs/build-plan.md (Phase 4). Dependencies per architecture-design.md §3 (Frontend table). Package manager: pnpm.",
+  "name": "content-gen-frontend",
+  "private": true,
+  "type": "module"
+}

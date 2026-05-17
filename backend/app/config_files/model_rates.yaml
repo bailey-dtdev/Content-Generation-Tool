@@ -1,0 +1,13 @@
+# Anthropic pricing — rates per million tokens, USD.
+# Stub: values are PLACEHOLDERS. See docs/build-plan.md (Phase 13).
+# Verify against https://www.anthropic.com/pricing before first deploy (arch §6.11).
+models:
+  claude-sonnet-4-6:
+    input_per_mtok: 3.00
+    output_per_mtok: 15.00
+  claude-haiku-4-5-20251001:
+    input_per_mtok: 1.00
+    output_per_mtok: 5.00
+  claude-opus-4-7:
+    input_per_mtok: 15.00
+    output_per_mtok: 75.00
