@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 
 from app import logging as app_logging
 from app import sentry
@@ -27,7 +28,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
-app = FastAPI(title="Content Generation Platform", lifespan=lifespan)
+def _operation_id(route: APIRoute) -> str:
+    """Tag-prefixed operation IDs keep the generated frontend client tidy."""
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}_{route.name}"
+
+
+app = FastAPI(
+    title="Content Generation Platform",
+    lifespan=lifespan,
+    generate_unique_id_function=_operation_id,
+)
 
 app.add_middleware(
     CORSMiddleware,

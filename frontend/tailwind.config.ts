@@ -1,3 +1,7 @@
-// Stub: Tailwind config. See docs/build-plan.md (Phase 4).
-// content globs cover src/**/*.{ts,tsx}.
-export {};
+import type { Config } from "tailwindcss";
+
+export default {
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+} satisfies Config;

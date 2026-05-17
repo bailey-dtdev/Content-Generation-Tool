@@ -1,3 +1,18 @@
-// Stub: Vite config. See docs/build-plan.md (Phase 4).
-// React plugin, dev server on port 5173, static build output to dist/.
-export {};
+import { fileURLToPath } from "node:url";
+
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  server: { port: 5173 },
+  test: {
+    environment: "jsdom",
+    globals: true,
+  },
+});

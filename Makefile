@@ -17,12 +17,14 @@ migration:
 
 test:
 	docker compose exec backend pytest
+	docker compose exec frontend pnpm test
 
 lint:
 	docker compose exec backend ruff check app
 	docker compose exec backend mypy app
+	docker compose exec frontend pnpm lint
 
-# Regenerates the frontend OpenAPI client; wired up in Phase 4.
+# Regenerates the frontend OpenAPI client from the running backend.
 gen-api:
 	curl -sf http://localhost:8000/openapi.json -o frontend/openapi.json
 	cd frontend && pnpm gen:api
