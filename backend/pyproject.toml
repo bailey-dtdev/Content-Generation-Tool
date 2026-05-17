@@ -5,6 +5,7 @@ description = "Content Generation Platform backend — FastAPI."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
+    "python-multipart",
     "uvicorn[standard]",
     "sqlalchemy[asyncio]>=2.0",
     "asyncpg",

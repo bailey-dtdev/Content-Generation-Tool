@@ -2,18 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
+import { ClientEdit } from "@/routes/ClientEdit";
+import { ClientList } from "@/routes/ClientList";
 import { Login } from "@/routes/Login";
-
-function Placeholder() {
-  return (
-    <div className="rounded-lg border bg-white p-6">
-      <h1 className="text-lg font-semibold">Welcome</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        The client registry and generation flow arrive in later build phases.
-      </p>
-    </div>
-  );
-}
 
 export function App() {
   return (
@@ -27,7 +18,10 @@ export function App() {
             </RequireAuth>
           }
         >
-          <Route path="/" element={<Placeholder />} />
+          <Route path="/" element={<Navigate to="/clients" replace />} />
+          <Route path="/clients" element={<ClientList />} />
+          <Route path="/clients/new" element={<ClientEdit />} />
+          <Route path="/clients/:clientId" element={<ClientEdit />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -16,7 +16,7 @@ from app import logging as app_logging
 from app import sentry
 from app.config import settings
 from app.db import engine
-from app.routers import auth
+from app.routers import auth, clients, sitemaps
 
 sentry.init()
 app_logging.configure()
@@ -55,3 +55,5 @@ async def healthz() -> dict[str, str]:
 
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(clients.router, prefix="/api/v1")
+app.include_router(sitemaps.router, prefix="/api/v1")
