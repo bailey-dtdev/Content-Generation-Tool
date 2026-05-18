@@ -3,13 +3,22 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { GenerationResponse, OutlineSection } from "@/api/generated";
 
+interface SectionContent {
+  heading: string;
+  text: string;
+}
+
 // The in-progress generation lives only in the browser session (arch §7.2);
 // the backend never stores generated content.
 interface GenerationState {
   generation: GenerationResponse | null;
   outline: OutlineSection[];
+  content: Record<string, SectionContent>;
   setGeneration: (generation: GenerationResponse) => void;
   setOutline: (outline: OutlineSection[]) => void;
+  startSection: (sectionId: string, heading: string) => void;
+  appendDelta: (sectionId: string, text: string) => void;
+  setSectionText: (sectionId: string, text: string) => void;
   reset: () => void;
 }
 
@@ -18,9 +27,31 @@ export const useGenerationStore = create<GenerationState>()(
     (set) => ({
       generation: null,
       outline: [],
+      content: {},
       setGeneration: (generation) => set({ generation }),
       setOutline: (outline) => set({ outline }),
-      reset: () => set({ generation: null, outline: [] }),
+      startSection: (sectionId, heading) =>
+        set((state) => ({
+          content: { ...state.content, [sectionId]: { heading, text: "" } },
+        })),
+      appendDelta: (sectionId, text) =>
+        set((state) => {
+          const current = state.content[sectionId] ?? { heading: "", text: "" };
+          return {
+            content: {
+              ...state.content,
+              [sectionId]: { ...current, text: current.text + text },
+            },
+          };
+        }),
+      setSectionText: (sectionId, text) =>
+        set((state) => {
+          const current = state.content[sectionId] ?? { heading: "", text: "" };
+          return {
+            content: { ...state.content, [sectionId]: { ...current, text } },
+          };
+        }),
+      reset: () => set({ generation: null, outline: [], content: {} }),
     }),
     {
       name: "active-generation",

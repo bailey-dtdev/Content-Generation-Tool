@@ -2,10 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ContentStreamRequest } from '../models/ContentStreamRequest';
 import type { GenerationInput } from '../models/GenerationInput';
 import type { GenerationResponse } from '../models/GenerationResponse';
 import type { OutlineSection } from '../models/OutlineSection';
 import type { OutlineUpdate } from '../models/OutlineUpdate';
+import type { RetrySectionRequest } from '../models/RetrySectionRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -145,6 +147,56 @@ export class GenerationsService {
       path: {
         'generation_id': generationId,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Stream Content
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static generationsStreamContent({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: ContentStreamRequest,
+  }): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/content/stream',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Retry Section
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static generationsRetrySection({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: RetrySectionRequest,
+  }): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/content/retry-section',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

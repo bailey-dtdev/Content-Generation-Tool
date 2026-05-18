@@ -33,6 +33,14 @@ class OutlineUpdate(BaseModel):
     sections: list[OutlineSection]
 
 
+class ContentStreamRequest(BaseModel):
+    mode: GenerationMode
+
+
+class RetrySectionRequest(BaseModel):
+    section_id: uuid.UUID
+
+
 class GenerationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

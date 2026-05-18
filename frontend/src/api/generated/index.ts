@@ -11,11 +11,13 @@ export type { Body_sitemaps_upload_sitemap } from './models/Body_sitemaps_upload
 export type { ClientCreate } from './models/ClientCreate';
 export type { ClientResponse } from './models/ClientResponse';
 export type { ClientUpdate } from './models/ClientUpdate';
+export { ContentStreamRequest } from './models/ContentStreamRequest';
 export { GenerationInput } from './models/GenerationInput';
 export type { GenerationResponse } from './models/GenerationResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { OutlineSection } from './models/OutlineSection';
 export type { OutlineUpdate } from './models/OutlineUpdate';
+export type { RetrySectionRequest } from './models/RetrySectionRequest';
 export type { SitemapResponse } from './models/SitemapResponse';
 export type { SitemapURL } from './models/SitemapURL';
 export type { UserResponse } from './models/UserResponse';

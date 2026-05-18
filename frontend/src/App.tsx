@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
 import { ClientEdit } from "@/routes/ClientEdit";
 import { ClientList } from "@/routes/ClientList";
+import { GenerationContent } from "@/routes/GenerationContent";
 import { GenerationNew } from "@/routes/GenerationNew";
 import { GenerationOutline } from "@/routes/GenerationOutline";
 import { Login } from "@/routes/Login";
@@ -28,6 +29,10 @@ export function App() {
           <Route
             path="/generations/:generationId/outline"
             element={<GenerationOutline />}
+          />
+          <Route
+            path="/generations/:generationId/content"
+            element={<GenerationContent />}
           />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
