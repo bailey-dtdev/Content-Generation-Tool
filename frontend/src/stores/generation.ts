@@ -5,7 +5,8 @@ import type { GenerationResponse, OutlineSection, QANote } from "@/api/generated
 
 interface SectionContent {
   heading: string;
-  text: string;
+  text: string; // streamed plain text
+  html?: string; // editor output once the user starts editing
 }
 
 // The in-progress generation lives only in the browser session (arch §7.2);
@@ -20,7 +21,7 @@ interface GenerationState {
   setQaNotes: (qaNotes: QANote[]) => void;
   startSection: (sectionId: string, heading: string) => void;
   appendDelta: (sectionId: string, text: string) => void;
-  setSectionText: (sectionId: string, text: string) => void;
+  setSectionHtml: (sectionId: string, html: string) => void;
   reset: () => void;
 }
 
@@ -48,11 +49,11 @@ export const useGenerationStore = create<GenerationState>()(
             },
           };
         }),
-      setSectionText: (sectionId, text) =>
+      setSectionHtml: (sectionId, html) =>
         set((state) => {
           const current = state.content[sectionId] ?? { heading: "", text: "" };
           return {
-            content: { ...state.content, [sectionId]: { ...current, text } },
+            content: { ...state.content, [sectionId]: { ...current, html } },
           };
         }),
       reset: () => set({ generation: null, outline: [], content: {}, qaNotes: [] }),
