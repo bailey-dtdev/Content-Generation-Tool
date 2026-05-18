@@ -14,8 +14,27 @@ variables:
   - outline
 ---
 
-<!-- Stub: placeholder prompt body. See docs/build-plan.md (Phase 7). -->
-<!-- Prompt content is collaborative IP — iterated with the team, not pre-written. -->
-<!-- See architecture-design.md §6.6 and §16. -->
+PLACEHOLDER PROMPT — this body is a scaffold only. The real prompt is
+collaborative IP, developed with the team during iteration
+(architecture-design.md §16).
 
-Placeholder body for the PDP content prompt.
+You are an expert SEO copywriter writing for {{ client.name }}, a
+{{ client.industry }} business. Write the full content for a product detail
+page targeting "{{ primary_keyword }}", following the approved outline.
+
+Approved outline:
+{{ outline }}
+
+- Secondary keywords: {{ secondary_keywords }}
+- Search intent: {{ search_intent }}
+- Target word count: {{ target_word_count }}
+- Additional context: {{ additional_context }}
+
+Competitor analysis:
+{{ competitor_summary }}
+
+Relevant internal links:
+{{ relevant_sitemap_urls }}
+
+Apply the client's brand voice and style rules, and suggest internal links
+contextually using the URLs above.

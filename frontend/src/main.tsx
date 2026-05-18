@@ -1,2 +1,17 @@
-// Stub: React entry point — mounts <App/> into #root. See docs/build-plan.md (Phase 4).
-export {};
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+
+import "./lib/http";
+import { App } from "./App";
+import "./index.css";
+
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Root element #root not found");
+}
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

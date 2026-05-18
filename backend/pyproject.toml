@@ -1,3 +1,62 @@
-# Stub: uv project + dependencies + ruff/mypy config. See docs/build-plan.md (Phase 1).
-# Dependencies enumerated in architecture-design.md §3 (Backend table).
-# mypy runs strict on app/; ruff handles lint + format.
+[project]
+name = "content-gen-backend"
+version = "0.1.0"
+description = "Content Generation Platform backend — FastAPI."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "python-multipart",
+    "uvicorn[standard]",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg",
+    "alembic",
+    "pydantic>=2",
+    "pydantic-settings",
+    "pyjwt[crypto]",
+    "cryptography",
+    "httpx",
+    "beautifulsoup4",
+    "lxml",
+    "anthropic",
+    "google-api-python-client",
+    "google-auth",
+    "mistune",
+    "python-frontmatter",
+    "pyyaml",
+    "structlog",
+    "sentry-sdk[fastapi]",
+    "jinja2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "mypy",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+[[tool.mypy.overrides]]
+module = ["bs4.*", "frontmatter", "yaml"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

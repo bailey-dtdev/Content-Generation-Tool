@@ -68,16 +68,16 @@ test suites to exist; a minimal CI can and should land sooner.
 
 Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 
-- [~] **Phase 0** — Repo scaffold & governance
-- [ ] **Phase 1** — Backend foundation
-- [ ] **Phase 2** — Database & migrations
-- [ ] **Phase 3** — Auth (Google SSO)
-- [ ] **Phase 4** — Frontend foundation
-- [ ] **Phase 5** — Client registry
-- [ ] **Phase 6** — Fetcher service
-- [ ] **Phase 7** — Prompts directory & loader
-- [ ] **Phase 8** — Outline generation
-- [ ] **Phase 9** — Content generation streaming
+- [x] **Phase 0** — Repo scaffold & governance
+- [x] **Phase 1** — Backend foundation
+- [x] **Phase 2** — Database & migrations
+- [x] **Phase 3** — Auth (Google SSO)
+- [x] **Phase 4** — Frontend foundation
+- [x] **Phase 5** — Client registry
+- [x] **Phase 6** — Fetcher service
+- [x] **Phase 7** — Prompts directory & loader
+- [x] **Phase 8** — Outline generation
+- [~] **Phase 9** — Content generation streaming
 - [ ] **Phase 10** — QA pass
 - [ ] **Phase 11** — Rich text editor
 - [ ] **Phase 12** — Google Docs export

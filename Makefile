@@ -1,3 +1,30 @@
-# Stub: repo dev commands. See docs/build-plan.md (Phase 1).
-# Implemented per architecture-design.md §5.3:
-#   up, down, logs, migrate, migration name=..., test, lint, gen-api
+.PHONY: up down logs migrate migration test lint gen-api
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f backend
+
+migrate:
+	docker compose exec backend alembic upgrade head
+
+migration:
+	docker compose exec backend alembic revision --autogenerate -m "$(name)"
+
+test:
+	docker compose exec backend pytest
+	docker compose exec frontend pnpm test
+
+lint:
+	docker compose exec backend ruff check app
+	docker compose exec backend mypy app
+	docker compose exec frontend pnpm lint
+
+# Regenerates the frontend OpenAPI client from the running backend.
+gen-api:
+	curl -sf http://localhost:8000/openapi.json -o frontend/openapi.json
+	cd frontend && pnpm gen:api
