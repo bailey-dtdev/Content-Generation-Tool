@@ -1,5 +1,65 @@
-# Stub: lint + test on every PR and push to main. See docs/build-plan.md (Phase 14).
-# Implemented per architecture-design.md §12.1:
-#   backend-test   — postgres service; ruff check; mypy app/; pytest
-#   frontend-test  — eslint; tsc --noEmit; pnpm test
-#   frontend-build — pnpm build
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: content_gen_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync
+      - name: Ruff
+        run: uv run ruff check app
+      - name: Mypy
+        run: uv run mypy app
+      - name: Pytest
+        run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: ESLint
+        run: pnpm lint
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build

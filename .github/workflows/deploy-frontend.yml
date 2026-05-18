@@ -1,3 +1,18 @@
-# Stub: deploy frontend to Netlify on push to main. See docs/build-plan.md (Phase 14).
-# Implemented per architecture-design.md §12.3 — may be unnecessary if Netlify's native
-# GitHub integration is used; keep only if CI-gated deploys are wanted.
+name: Deploy frontend
+
+# Triggers a Netlify build once CI passes on main. See architecture-design.md §12.3.
+# Netlify performs the actual build and deploy; this workflow only gates it on
+# green CI. Set the NETLIFY_BUILD_HOOK secret to the repository's build hook URL.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify build
+        run: curl -fsS -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
