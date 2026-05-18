@@ -32,6 +32,11 @@ frontend/openapi.json
 # Editors / tooling
 .idea/
 *.swp
+*.pnpm-store
+*.pnpm-store/*
+
+# Local Docker Compose overrides (machine-specific, not committed)
+docker-compose.override.yml
 
 # Local Claude Code settings (keep .claude/skills tracked)
 .claude/settings.local.json

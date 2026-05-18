@@ -1,6 +1,8 @@
 # Netlify deployment config. See architecture-design.md §11.2.
-# Set the Netlify site's base directory to "frontend". Update the /api proxy
-# target if the Fly app is not named "content-gen-backend".
+# Must live at the repo ROOT: Netlify only reads netlify.toml from the build
+# base directory, and this is a frontend/ + backend/ monorepo. `base` below
+# points the build into frontend/. Update the /api proxy target if the Fly
+# app is not named "content-gen-backend".
 [build]
   base = "frontend"
   command = "pnpm install --frozen-lockfile && pnpm build"
