@@ -4,9 +4,11 @@ import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
 import { ClientEdit } from "@/routes/ClientEdit";
 import { ClientList } from "@/routes/ClientList";
+import { GenerationContent } from "@/routes/GenerationContent";
 import { GenerationNew } from "@/routes/GenerationNew";
 import { GenerationOutline } from "@/routes/GenerationOutline";
 import { Login } from "@/routes/Login";
+import { UsageDashboard } from "@/routes/UsageDashboard";
 
 export function App() {
   return (
@@ -29,6 +31,11 @@ export function App() {
             path="/generations/:generationId/outline"
             element={<GenerationOutline />}
           />
+          <Route
+            path="/generations/:generationId/content"
+            element={<GenerationContent />}
+          />
+          <Route path="/usage" element={<UsageDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

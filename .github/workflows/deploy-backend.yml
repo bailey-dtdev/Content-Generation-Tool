@@ -1,2 +1,23 @@
-# Stub: deploy backend to Fly.io on push to main. See docs/build-plan.md (Phase 14).
-# Implemented per architecture-design.md §12.2: flyctl deploy --remote-only (needs FLY_API_TOKEN).
+name: Deploy backend
+
+# Deploys to Fly.io once CI passes on main. See architecture-design.md §12.2.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        working-directory: backend
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

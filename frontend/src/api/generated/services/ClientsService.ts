@@ -5,6 +5,7 @@
 import type { ClientCreate } from '../models/ClientCreate';
 import type { ClientResponse } from '../models/ClientResponse';
 import type { ClientUpdate } from '../models/ClientUpdate';
+import type { CumulativeUsage } from '../models/CumulativeUsage';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -99,6 +100,27 @@ export class ClientsService {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/api/v1/clients/{client_id}',
+      path: {
+        'client_id': clientId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Client Usage
+   * @returns CumulativeUsage Successful Response
+   * @throws ApiError
+   */
+  public static clientsClientUsage({
+    clientId,
+  }: {
+    clientId: string,
+  }): CancelablePromise<CumulativeUsage> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/clients/{client_id}/usage',
       path: {
         'client_id': clientId,
       },

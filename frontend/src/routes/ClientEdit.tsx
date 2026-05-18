@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { ClientsService, type ClientCreate, type ClientResponse } from "@/api/generated";
+import {
+  ClientsService,
+  type ClientCreate,
+  type ClientResponse,
+  type CumulativeUsage,
+} from "@/api/generated";
 import { ClientForm } from "@/components/ClientForm";
 import { SitemapUpload } from "@/components/SitemapUpload";
 
@@ -9,6 +14,7 @@ export function ClientEdit() {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<ClientResponse | undefined>();
+  const [usage, setUsage] = useState<CumulativeUsage | null>(null);
   const [loading, setLoading] = useState(Boolean(clientId));
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,6 +23,9 @@ export function ClientEdit() {
     ClientsService.clientsGetClient({ clientId })
       .then(setClient)
       .finally(() => setLoading(false));
+    ClientsService.clientsClientUsage({ clientId })
+      .then(setUsage)
+      .catch(() => setUsage(null));
   }, [clientId]);
 
   const save = async (payload: ClientCreate) => {
@@ -46,6 +55,11 @@ export function ClientEdit() {
       <h1 className="text-lg font-semibold">
         {clientId ? "Edit client" : "New client"}
       </h1>
+      {usage ? (
+        <p className="text-sm text-slate-500">
+          Total spend on this client: ${Number(usage.total_cost_usd).toFixed(4)}
+        </p>
+      ) : null}
       <ClientForm client={client} onSubmit={save} submitting={submitting} />
       {clientId ? <SitemapUpload clientId={clientId} /> : null}
     </div>

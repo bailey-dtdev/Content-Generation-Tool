@@ -12,6 +12,7 @@ variables:
   - competitor_summary
   - relevant_sitemap_urls
   - outline
+  - section
 ---
 
 PLACEHOLDER PROMPT — this body is a scaffold only. The real prompt is
@@ -39,3 +40,8 @@ Relevant internal links:
 
 Apply the client's brand voice and style rules, and suggest internal links
 contextually using the URLs above.
+
+{% if section %}
+For this response write ONLY the section "{{ section.heading }}" —
+{{ section.blurb }}. Output just that section's content, not the whole document.
+{% endif %}

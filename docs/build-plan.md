@@ -77,13 +77,13 @@ Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 - [x] **Phase 6** — Fetcher service
 - [x] **Phase 7** — Prompts directory & loader
 - [x] **Phase 8** — Outline generation
-- [~] **Phase 9** — Content generation streaming
-- [ ] **Phase 10** — QA pass
-- [ ] **Phase 11** — Rich text editor
-- [ ] **Phase 12** — Google Docs export
-- [ ] **Phase 13** — Cost tracking & dashboards
-- [ ] **Phase 14** — CI/CD
-- [ ] **Phase 15** — Production deploy
+- [x] **Phase 9** — Content generation streaming
+- [x] **Phase 10** — QA pass
+- [x] **Phase 11** — Rich text editor
+- [x] **Phase 12** — Google Docs export
+- [x] **Phase 13** — Cost tracking & dashboards
+- [x] **Phase 14** — CI/CD
+- [~] **Phase 15** — Production deploy
 - [ ] **Phase 16** — Observability
 
 ---

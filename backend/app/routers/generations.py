@@ -1,14 +1,18 @@
-"""Generation flow routes — create, outline, approve, abort.
+"""Generation flow routes — create, outline, content streaming, abort.
 
-Covers scope §10 steps 1-4. Content streaming and QA arrive in later phases.
-See architecture-design.md §6.5, §6.8, §9.
+Covers scope §10 steps 1-5. See architecture-design.md §6.5, §6.7, §6.8, §9.
 """
 
+import json
 import uuid
-from typing import Annotated
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from typing import Annotated, Any
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -16,13 +20,20 @@ from app.db import get_db
 from app.deps import get_current_user
 from app.models import Client, Generation, Sitemap, UsageRecord, User
 from app.schemas.generation import (
+    ContentStreamRequest,
+    ExportRequest,
+    ExportResponse,
     GenerationInput,
     GenerationResponse,
     OutlineSection,
     OutlineUpdate,
+    QARequest,
+    QAResponse,
+    RetrySectionRequest,
 )
-from app.services import claude_service
-from app.services.cost_service import cost_for
+from app.schemas.usage import GenerationUsage, StageBreakdown
+from app.services import auth_service, claude_service, export_service, qa_service
+from app.services.cost_service import cost_for, cumulative_usage
 from app.services.fetcher import fetch_competitors, filter_sitemap
 from app.services.prompts import render_prompt
 
@@ -238,3 +249,291 @@ async def abort_generation(
     await db.flush()
     await db.refresh(generation)
     return generation
+
+
+log = structlog.get_logger()
+
+
+def _sse(event: str, data: dict[str, Any]) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+def _content_prompt(
+    generation: Generation, client: Client, section: dict[str, Any] | None
+) -> str:
+    data = generation.input
+    return render_prompt(
+        f"content_{generation.content_type}",
+        client=_client_context(client),
+        primary_keyword=data["primary_keyword"],
+        secondary_keywords=data["secondary_keywords"],
+        search_intent=data["search_intent"],
+        target_word_count=data["target_word_count"],
+        additional_context=data["additional_context"],
+        competitor_summary=generation.competitor_summaries,
+        relevant_sitemap_urls=generation.relevant_sitemap_urls,
+        outline=generation.outline,
+        section=section,
+    )
+
+
+def _record_content_usage(
+    db: AsyncSession, generation: Generation, usage: claude_service.TokenUsage
+) -> None:
+    db.add(
+        UsageRecord(
+            generation_id=generation.id,
+            user_id=generation.user_id,
+            client_id=generation.client_id,
+            stage="content",
+            model=settings.model_generation,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cost_usd=cost_for(
+                settings.model_generation, usage.input_tokens, usage.output_tokens
+            ),
+        )
+    )
+
+
+async def _stream_unit(
+    db: AsyncSession,
+    generation: Generation,
+    section_id: str,
+    heading: str,
+    prompt: str,
+) -> AsyncIterator[str]:
+    """Stream one content unit, auto-retrying once before emitting an error."""
+    for attempt in (1, 2):
+        yield _sse("section_start", {"section_id": section_id, "heading": heading})
+        usage: claude_service.TokenUsage | None = None
+        try:
+            async for chunk in claude_service.stream_content(
+                prompt, settings.model_generation
+            ):
+                if isinstance(chunk, claude_service.StreamDelta):
+                    yield _sse("delta", {"section_id": section_id, "text": chunk.text})
+                else:
+                    usage = chunk.usage
+        except Exception:
+            log.warning(
+                "content.section_failed", section_id=section_id, attempt=attempt
+            )
+            if attempt == 2:
+                yield _sse(
+                    "error",
+                    {
+                        "section_id": section_id,
+                        "message": "section generation failed",
+                        "retryable": True,
+                    },
+                )
+            continue
+        if usage is not None:
+            _record_content_usage(db, generation, usage)
+            await db.commit()
+            yield _sse(
+                "section_complete",
+                {
+                    "section_id": section_id,
+                    "usage": {
+                        "input_tokens": usage.input_tokens,
+                        "output_tokens": usage.output_tokens,
+                    },
+                },
+            )
+        return
+
+
+async def _content_event_stream(
+    db: AsyncSession, generation: Generation, client: Client
+) -> AsyncIterator[str]:
+    outline: list[dict[str, Any]] = generation.outline or []
+
+    if generation.mode == "sequential":
+        for section in outline:
+            prompt = _content_prompt(generation, client, section)
+            async for event in _stream_unit(
+                db, generation, str(section["section_id"]), section["heading"], prompt
+            ):
+                yield event
+    else:
+        prompt = _content_prompt(generation, client, None)
+        async for event in _stream_unit(
+            db, generation, str(uuid.uuid4()), "Full draft", prompt
+        ):
+            yield event
+
+    generation.status = "awaiting_review"
+    generation.completed_at = datetime.now(UTC)
+    await db.commit()
+
+    totals = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(UsageRecord.input_tokens), 0),
+                func.coalesce(func.sum(UsageRecord.output_tokens), 0),
+                func.coalesce(func.sum(UsageRecord.cost_usd), 0),
+            ).where(UsageRecord.generation_id == generation.id)
+        )
+    ).one()
+    yield _sse(
+        "generation_complete",
+        {
+            "total_usage": {
+                "input_tokens": int(totals[0]),
+                "output_tokens": int(totals[1]),
+            },
+            "total_cost_usd": str(totals[2]),
+        },
+    )
+
+
+@router.post("/{generation_id}/content/stream")
+async def stream_content(
+    generation_id: uuid.UUID,
+    payload: ContentStreamRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> StreamingResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    if not generation.outline:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "no approved outline")
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+    generation.mode = payload.mode
+    await db.commit()
+    return StreamingResponse(
+        _content_event_stream(db, generation, client),
+        media_type="text/event-stream",
+    )
+
+
+@router.post("/{generation_id}/content/retry-section")
+async def retry_section(
+    generation_id: uuid.UUID,
+    payload: RetrySectionRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> StreamingResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+    section = next(
+        (
+            item
+            for item in (generation.outline or [])
+            if str(item["section_id"]) == str(payload.section_id)
+        ),
+        None,
+    )
+    if section is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "section not in outline")
+    prompt = _content_prompt(generation, client, section)
+    target = section
+
+    async def _one_section() -> AsyncIterator[str]:
+        async for event in _stream_unit(
+            db, generation, str(target["section_id"]), target["heading"], prompt
+        ):
+            yield event
+
+    return StreamingResponse(_one_section(), media_type="text/event-stream")
+
+
+@router.post("/{generation_id}/qa", response_model=QAResponse)
+async def run_qa(
+    generation_id: uuid.UUID,
+    payload: QARequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> QAResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+
+    primary_keyword = str(generation.input.get("primary_keyword", ""))
+    rule_notes = qa_service.run_rule_checks(payload.sections, client, primary_keyword)
+    llm_notes, usage = await qa_service.run_llm_qa(payload.sections, client, rule_notes)
+
+    if usage is not None:
+        db.add(
+            UsageRecord(
+                generation_id=generation.id,
+                user_id=generation.user_id,
+                client_id=generation.client_id,
+                stage="qa",
+                model=settings.model_qa,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                cost_usd=cost_for(
+                    settings.model_qa, usage.input_tokens, usage.output_tokens
+                ),
+            )
+        )
+        await db.flush()
+
+    return QAResponse(notes=rule_notes + llm_notes)
+
+
+@router.post("/{generation_id}/export", response_model=ExportResponse)
+async def export_generation(
+    generation_id: uuid.UUID,
+    payload: ExportRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> ExportResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+
+    access_token = await auth_service.get_google_access_token(db, user)
+    name = export_service.doc_name(
+        client.name,
+        generation.content_type,
+        str(generation.input.get("primary_keyword", "")),
+    )
+    doc_url = await export_service.export_to_doc(access_token, name, payload.sections)
+
+    generation.exported_doc_url = doc_url
+    generation.status = "exported"
+    await db.flush()
+    return ExportResponse(doc_url=doc_url)
+
+
+@router.get("/{generation_id}/usage", response_model=GenerationUsage)
+async def generation_usage(
+    generation_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> GenerationUsage:
+    await _get_owned_generation(db, generation_id, user)
+    stage_rows = (
+        await db.execute(
+            select(
+                UsageRecord.stage,
+                func.coalesce(func.sum(UsageRecord.cost_usd), 0),
+            )
+            .where(UsageRecord.generation_id == generation_id)
+            .group_by(UsageRecord.stage)
+        )
+    ).all()
+    by_stage = StageBreakdown()
+    for stage, cost in stage_rows:
+        if stage in ("outline", "content", "qa"):
+            setattr(by_stage, stage, cost)
+
+    total_cost, input_tokens, output_tokens = await cumulative_usage(
+        db, UsageRecord.generation_id == generation_id
+    )
+    return GenerationUsage(
+        generation_id=generation_id,
+        total_cost_usd=total_cost,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        by_stage=by_stage,
+    )

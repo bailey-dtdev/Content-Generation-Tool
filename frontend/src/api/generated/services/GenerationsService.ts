@@ -2,10 +2,17 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ContentStreamRequest } from '../models/ContentStreamRequest';
+import type { ExportRequest } from '../models/ExportRequest';
+import type { ExportResponse } from '../models/ExportResponse';
 import type { GenerationInput } from '../models/GenerationInput';
 import type { GenerationResponse } from '../models/GenerationResponse';
+import type { GenerationUsage } from '../models/GenerationUsage';
 import type { OutlineSection } from '../models/OutlineSection';
 import type { OutlineUpdate } from '../models/OutlineUpdate';
+import type { QARequest } from '../models/QARequest';
+import type { QAResponse } from '../models/QAResponse';
+import type { RetrySectionRequest } from '../models/RetrySectionRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -142,6 +149,127 @@ export class GenerationsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v1/generations/{generation_id}/abort',
+      path: {
+        'generation_id': generationId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Stream Content
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static generationsStreamContent({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: ContentStreamRequest,
+  }): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/content/stream',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Retry Section
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static generationsRetrySection({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: RetrySectionRequest,
+  }): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/content/retry-section',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Run Qa
+   * @returns QAResponse Successful Response
+   * @throws ApiError
+   */
+  public static generationsRunQa({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: QARequest,
+  }): CancelablePromise<QAResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/qa',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Export Generation
+   * @returns ExportResponse Successful Response
+   * @throws ApiError
+   */
+  public static generationsExportGeneration({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: ExportRequest,
+  }): CancelablePromise<ExportResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/export',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Generation Usage
+   * @returns GenerationUsage Successful Response
+   * @throws ApiError
+   */
+  public static generationsGenerationUsage({
+    generationId,
+  }: {
+    generationId: string,
+  }): CancelablePromise<GenerationUsage> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/generations/{generation_id}/usage',
       path: {
         'generation_id': generationId,
       },
