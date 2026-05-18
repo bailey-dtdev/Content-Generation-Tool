@@ -74,8 +74,8 @@ Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 - [x] **Phase 3** — Auth (Google SSO)
 - [x] **Phase 4** — Frontend foundation
 - [x] **Phase 5** — Client registry
-- [~] **Phase 6** — Fetcher service
-- [ ] **Phase 7** — Prompts directory & loader
+- [x] **Phase 6** — Fetcher service
+- [~] **Phase 7** — Prompts directory & loader
 - [ ] **Phase 8** — Outline generation
 - [ ] **Phase 9** — Content generation streaming
 - [ ] **Phase 10** — QA pass
