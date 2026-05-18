@@ -3,6 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ContentStreamRequest } from '../models/ContentStreamRequest';
+import type { ExportRequest } from '../models/ExportRequest';
+import type { ExportResponse } from '../models/ExportResponse';
 import type { GenerationInput } from '../models/GenerationInput';
 import type { GenerationResponse } from '../models/GenerationResponse';
 import type { OutlineSection } from '../models/OutlineSection';
@@ -219,6 +221,31 @@ export class GenerationsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v1/generations/{generation_id}/qa',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Export Generation
+   * @returns ExportResponse Successful Response
+   * @throws ApiError
+   */
+  public static generationsExportGeneration({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: ExportRequest,
+  }): CancelablePromise<ExportResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/export',
       path: {
         'generation_id': generationId,
       },

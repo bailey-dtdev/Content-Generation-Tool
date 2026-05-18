@@ -37,6 +37,8 @@ export function GenerationContent() {
   const [mode, setMode] = useState<Mode>("sequential");
   const [streaming, setStreaming] = useState(false);
   const [qaRunning, setQaRunning] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [docUrl, setDocUrl] = useState<string | null>(null);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
   const [totalCost, setTotalCost] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -124,6 +126,25 @@ export function GenerationContent() {
     }
   };
 
+  const exportDoc = async () => {
+    setExporting(true);
+    try {
+      const result = await GenerationsService.generationsExportGeneration({
+        generationId: generation.id,
+        requestBody: {
+          sections: Object.entries(content).map(([sectionId, section]) => ({
+            section_id: sectionId,
+            heading: section.heading,
+            content_html: section.html ?? textToHtml(section.text),
+          })),
+        },
+      });
+      setDocUrl(result.doc_url);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const sections = Object.entries(content);
 
   return (
@@ -169,7 +190,30 @@ export function GenerationContent() {
         >
           {qaRunning ? "Running QA…" : "Run QA"}
         </button>
+        <button
+          type="button"
+          onClick={() => void exportDoc()}
+          disabled={streaming || exporting || sections.length === 0}
+          className="rounded-md border px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
+        >
+          {exporting ? "Exporting…" : "Export to Google Docs"}
+        </button>
       </div>
+
+      {docUrl ? (
+        <p className="text-sm text-slate-600">
+          Exported —{" "}
+          <a
+            href={docUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            open the Google Doc
+          </a>
+          .
+        </p>
+      ) : null}
 
       <div className="flex gap-6">
         <div className="flex-1 space-y-4">

@@ -70,6 +70,20 @@ class QAResponse(BaseModel):
     notes: list[QANote]
 
 
+class ExportSectionInput(BaseModel):
+    section_id: str
+    heading: str
+    content_html: str
+
+
+class ExportRequest(BaseModel):
+    sections: list[ExportSectionInput]
+
+
+class ExportResponse(BaseModel):
+    doc_url: str
+
+
 class GenerationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

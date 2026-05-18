@@ -58,3 +58,4 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(sitemaps.router, prefix="/api/v1")
 app.include_router(generations.router, prefix="/api/v1")
+

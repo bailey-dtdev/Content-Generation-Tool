@@ -21,6 +21,8 @@ from app.deps import get_current_user
 from app.models import Client, Generation, Sitemap, UsageRecord, User
 from app.schemas.generation import (
     ContentStreamRequest,
+    ExportRequest,
+    ExportResponse,
     GenerationInput,
     GenerationResponse,
     OutlineSection,
@@ -29,7 +31,7 @@ from app.schemas.generation import (
     QAResponse,
     RetrySectionRequest,
 )
-from app.services import claude_service, qa_service
+from app.services import auth_service, claude_service, export_service, qa_service
 from app.services.cost_service import cost_for
 from app.services.fetcher import fetch_competitors, filter_sitemap
 from app.services.prompts import render_prompt
@@ -474,3 +476,29 @@ async def run_qa(
         await db.flush()
 
     return QAResponse(notes=rule_notes + llm_notes)
+
+
+@router.post("/{generation_id}/export", response_model=ExportResponse)
+async def export_generation(
+    generation_id: uuid.UUID,
+    payload: ExportRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> ExportResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+
+    access_token = await auth_service.get_google_access_token(db, user)
+    name = export_service.doc_name(
+        client.name,
+        generation.content_type,
+        str(generation.input.get("primary_keyword", "")),
+    )
+    doc_url = await export_service.export_to_doc(access_token, name, payload.sections)
+
+    generation.exported_doc_url = doc_url
+    generation.status = "exported"
+    await db.flush()
+    return ExportResponse(doc_url=doc_url)
