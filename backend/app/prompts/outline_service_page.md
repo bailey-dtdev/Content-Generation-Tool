@@ -33,4 +33,5 @@ Competitor analysis:
 Relevant internal links:
 {{ relevant_sitemap_urls }}
 
-Return a heading and a short descriptive blurb for each section.
+Return ONLY a JSON array; each element an object with string fields `heading`
+and `blurb`. Output no prose outside the JSON array.

@@ -53,7 +53,7 @@ plugins = ["pydantic.mypy"]
 files = ["app"]
 
 [[tool.mypy.overrides]]
-module = ["bs4.*", "frontmatter"]
+module = ["bs4.*", "frontmatter", "yaml"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
