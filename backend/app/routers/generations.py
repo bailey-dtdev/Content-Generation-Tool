@@ -31,8 +31,9 @@ from app.schemas.generation import (
     QAResponse,
     RetrySectionRequest,
 )
+from app.schemas.usage import GenerationUsage, StageBreakdown
 from app.services import auth_service, claude_service, export_service, qa_service
-from app.services.cost_service import cost_for
+from app.services.cost_service import cost_for, cumulative_usage
 from app.services.fetcher import fetch_competitors, filter_sitemap
 from app.services.prompts import render_prompt
 
@@ -502,3 +503,37 @@ async def export_generation(
     generation.status = "exported"
     await db.flush()
     return ExportResponse(doc_url=doc_url)
+
+
+@router.get("/{generation_id}/usage", response_model=GenerationUsage)
+async def generation_usage(
+    generation_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> GenerationUsage:
+    await _get_owned_generation(db, generation_id, user)
+    stage_rows = (
+        await db.execute(
+            select(
+                UsageRecord.stage,
+                func.coalesce(func.sum(UsageRecord.cost_usd), 0),
+            )
+            .where(UsageRecord.generation_id == generation_id)
+            .group_by(UsageRecord.stage)
+        )
+    ).all()
+    by_stage = StageBreakdown()
+    for stage, cost in stage_rows:
+        if stage in ("outline", "content", "qa"):
+            setattr(by_stage, stage, cost)
+
+    total_cost, input_tokens, output_tokens = await cumulative_usage(
+        db, UsageRecord.generation_id == generation_id
+    )
+    return GenerationUsage(
+        generation_id=generation_id,
+        total_cost_usd=total_cost,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        by_stage=by_stage,
+    )

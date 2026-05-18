@@ -10,8 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import get_current_user
-from app.models import Client, User
+from app.models import Client, UsageRecord, User
 from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
+from app.schemas.usage import CumulativeUsage
+from app.services.cost_service import cumulative_usage
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -66,6 +68,21 @@ async def update_client(
     await db.flush()
     await db.refresh(client)  # reload the server-side updated_at
     return client
+
+
+@router.get("/{client_id}/usage", response_model=CumulativeUsage)
+async def client_usage(
+    client_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _user: Annotated[User, Depends(get_current_user)],
+) -> CumulativeUsage:
+    await _get_client_or_404(db, client_id)
+    cost, input_tokens, output_tokens = await cumulative_usage(
+        db, UsageRecord.client_id == client_id
+    )
+    return CumulativeUsage(
+        total_cost_usd=cost, input_tokens=input_tokens, output_tokens=output_tokens
+    )
 
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)

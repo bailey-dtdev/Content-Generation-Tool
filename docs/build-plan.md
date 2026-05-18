@@ -81,8 +81,8 @@ Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 - [x] **Phase 10** — QA pass
 - [x] **Phase 11** — Rich text editor
 - [x] **Phase 12** — Google Docs export
-- [~] **Phase 13** — Cost tracking & dashboards
-- [ ] **Phase 14** — CI/CD
+- [x] **Phase 13** — Cost tracking & dashboards
+- [~] **Phase 14** — CI/CD
 - [ ] **Phase 15** — Production deploy
 - [ ] **Phase 16** — Observability
 

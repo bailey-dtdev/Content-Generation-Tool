@@ -16,7 +16,7 @@ from app import logging as app_logging
 from app import sentry
 from app.config import settings
 from app.db import engine
-from app.routers import auth, clients, generations, sitemaps
+from app.routers import auth, clients, generations, sitemaps, usage
 
 sentry.init()
 app_logging.configure()
@@ -58,4 +58,5 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(sitemaps.router, prefix="/api/v1")
 app.include_router(generations.router, prefix="/api/v1")
+app.include_router(usage.router, prefix="/api/v1")
 

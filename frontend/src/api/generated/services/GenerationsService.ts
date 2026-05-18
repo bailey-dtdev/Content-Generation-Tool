@@ -7,6 +7,7 @@ import type { ExportRequest } from '../models/ExportRequest';
 import type { ExportResponse } from '../models/ExportResponse';
 import type { GenerationInput } from '../models/GenerationInput';
 import type { GenerationResponse } from '../models/GenerationResponse';
+import type { GenerationUsage } from '../models/GenerationUsage';
 import type { OutlineSection } from '../models/OutlineSection';
 import type { OutlineUpdate } from '../models/OutlineUpdate';
 import type { QARequest } from '../models/QARequest';
@@ -251,6 +252,27 @@ export class GenerationsService {
       },
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Generation Usage
+   * @returns GenerationUsage Successful Response
+   * @throws ApiError
+   */
+  public static generationsGenerationUsage({
+    generationId,
+  }: {
+    generationId: string,
+  }): CancelablePromise<GenerationUsage> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v1/generations/{generation_id}/usage',
+      path: {
+        'generation_id': generationId,
+      },
       errors: {
         422: `Validation Error`,
       },

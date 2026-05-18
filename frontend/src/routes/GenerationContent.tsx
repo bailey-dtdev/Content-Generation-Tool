@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { GenerationsService } from "@/api/generated";
 import { ContentEditor } from "@/components/ContentEditor";
+import { CostBadge } from "@/components/CostBadge";
 import { QAPanel } from "@/components/QAPanel";
 import { streamPost } from "@/lib/sse";
 import { htmlToText, textToHtml } from "@/lib/utils";
@@ -39,6 +40,7 @@ export function GenerationContent() {
   const [qaRunning, setQaRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
+  const [usageVersion, setUsageVersion] = useState(0);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
   const [totalCost, setTotalCost] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -90,7 +92,10 @@ export function GenerationContent() {
       {
         onEvent: handleEvent,
         onError: () => setStreaming(false),
-        onDone: () => setStreaming(false),
+        onDone: () => {
+          setStreaming(false);
+          setUsageVersion((version) => version + 1);
+        },
       },
       controller.signal,
     );
@@ -121,6 +126,7 @@ export function GenerationContent() {
         },
       });
       setQaNotes(result.notes);
+      setUsageVersion((version) => version + 1);
     } finally {
       setQaRunning(false);
     }
@@ -214,6 +220,8 @@ export function GenerationContent() {
           .
         </p>
       ) : null}
+
+      <CostBadge generationId={generation.id} refreshKey={usageVersion} />
 
       <div className="flex gap-6">
         <div className="flex-1 space-y-4">

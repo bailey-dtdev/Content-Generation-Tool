@@ -18,6 +18,9 @@ export function AppLayout() {
             <Link to="/generations/new" className="hover:text-slate-900">
               New generation
             </Link>
+            <Link to="/usage" className="hover:text-slate-900">
+              Usage
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
