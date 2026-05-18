@@ -1,3 +1,22 @@
-# Stub: Netlify config. See docs/build-plan.md (Phase 15).
-# Full config in architecture-design.md §11.2: pnpm build, publish dist/,
-# /api/* proxy to the Fly backend, SPA fallback redirect to /index.html.
+# Netlify deployment config. See architecture-design.md §11.2.
+# Set the Netlify site's base directory to "frontend". Update the /api proxy
+# target if the Fly app is not named "content-gen-backend".
+[build]
+  base = "frontend"
+  command = "pnpm install --frozen-lockfile && pnpm build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://content-gen-backend.fly.dev/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
