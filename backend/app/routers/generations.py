@@ -25,9 +25,11 @@ from app.schemas.generation import (
     GenerationResponse,
     OutlineSection,
     OutlineUpdate,
+    QARequest,
+    QAResponse,
     RetrySectionRequest,
 )
-from app.services import claude_service
+from app.services import claude_service, qa_service
 from app.services.cost_service import cost_for
 from app.services.fetcher import fetch_competitors, filter_sitemap
 from app.services.prompts import render_prompt
@@ -436,3 +438,39 @@ async def retry_section(
             yield event
 
     return StreamingResponse(_one_section(), media_type="text/event-stream")
+
+
+@router.post("/{generation_id}/qa", response_model=QAResponse)
+async def run_qa(
+    generation_id: uuid.UUID,
+    payload: QARequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> QAResponse:
+    generation = await _get_owned_generation(db, generation_id, user)
+    client = await db.get(Client, generation.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "client not found")
+
+    primary_keyword = str(generation.input.get("primary_keyword", ""))
+    rule_notes = qa_service.run_rule_checks(payload.sections, client, primary_keyword)
+    llm_notes, usage = await qa_service.run_llm_qa(payload.sections, client, rule_notes)
+
+    if usage is not None:
+        db.add(
+            UsageRecord(
+                generation_id=generation.id,
+                user_id=generation.user_id,
+                client_id=generation.client_id,
+                stage="qa",
+                model=settings.model_qa,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                cost_usd=cost_for(
+                    settings.model_qa, usage.input_tokens, usage.output_tokens
+                ),
+            )
+        )
+        await db.flush()
+
+    return QAResponse(notes=rule_notes + llm_notes)

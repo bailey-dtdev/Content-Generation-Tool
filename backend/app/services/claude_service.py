@@ -19,6 +19,7 @@ client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
 _OUTLINE_MAX_TOKENS = 4096
 _CONTENT_MAX_TOKENS = 8192
+_QA_MAX_TOKENS = 4096
 
 
 class TokenUsage(BaseModel):
@@ -33,6 +34,11 @@ class OutlineSectionDraft(BaseModel):
 
 class OutlineResult(BaseModel):
     sections: list[OutlineSectionDraft]
+    usage: TokenUsage
+
+
+class QAReviewResult(BaseModel):
+    notes: list[dict[str, Any]]
     usage: TokenUsage
 
 
@@ -73,6 +79,25 @@ async def generate_outline(prompt: str, model: str) -> OutlineResult:
     sections = [OutlineSectionDraft(**item) for item in extract_json_array(text)]
     return OutlineResult(
         sections=sections,
+        usage=TokenUsage(
+            input_tokens=message.usage.input_tokens,
+            output_tokens=message.usage.output_tokens,
+        ),
+    )
+
+
+async def review_content(prompt: str, model: str) -> QAReviewResult:
+    """Run the non-streaming QA review call, parsing its JSON note array."""
+    message = await client.messages.create(
+        model=model,
+        max_tokens=_QA_MAX_TOKENS,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = "".join(
+        block.text for block in message.content if isinstance(block, TextBlock)
+    )
+    return QAReviewResult(
+        notes=extract_json_array(text),
         usage=TokenUsage(
             input_tokens=message.usage.input_tokens,
             output_tokens=message.usage.output_tokens,

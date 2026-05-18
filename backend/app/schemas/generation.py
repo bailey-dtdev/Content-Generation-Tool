@@ -41,6 +41,35 @@ class RetrySectionRequest(BaseModel):
     section_id: uuid.UUID
 
 
+QASeverity = Literal["info", "warning", "error"]
+
+
+class QASectionInput(BaseModel):
+    section_id: str
+    content: str
+
+
+class QARequest(BaseModel):
+    sections: list[QASectionInput]
+
+
+class QASpan(BaseModel):
+    start: int
+    end: int
+
+
+class QANote(BaseModel):
+    severity: QASeverity
+    category: str
+    message: str
+    section_id: str
+    span: QASpan | None = None
+
+
+class QAResponse(BaseModel):
+    notes: list[QANote]
+
+
 class GenerationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

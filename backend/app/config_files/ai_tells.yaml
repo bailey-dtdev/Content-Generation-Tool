@@ -1,7 +1,31 @@
 # Common AI tells — phrases the rule-based QA check flags (case-insensitive).
-# Stub: starter list. Expanded in docs/build-plan.md (Phase 10). See arch §6.10.1.
+# Expand as new patterns are noticed. See architecture-design.md §6.10.1.
 phrases:
   - delve
+  - delve into
   - tapestry
-  - navigate the landscape of
+  - navigate the landscape
+  - navigate the complexities
   - in today's fast-paced world
+  - in the ever-evolving
+  - in the realm of
+  - it's important to note
+  - it is worth noting
+  - when it comes to
+  - a testament to
+  - plays a crucial role
+  - plays a vital role
+  - at the end of the day
+  - unlock the potential
+  - unlock the power
+  - take it to the next level
+  - game-changer
+  - game changer
+  - cutting-edge
+  - seamless integration
+  - robust solution
+  - in conclusion
+  - elevate your
+  - dive deep
+  - foster a culture
+  - leverage the power

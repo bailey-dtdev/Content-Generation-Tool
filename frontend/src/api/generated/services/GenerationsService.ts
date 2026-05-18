@@ -7,6 +7,8 @@ import type { GenerationInput } from '../models/GenerationInput';
 import type { GenerationResponse } from '../models/GenerationResponse';
 import type { OutlineSection } from '../models/OutlineSection';
 import type { OutlineUpdate } from '../models/OutlineUpdate';
+import type { QARequest } from '../models/QARequest';
+import type { QAResponse } from '../models/QAResponse';
 import type { RetrySectionRequest } from '../models/RetrySectionRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -192,6 +194,31 @@ export class GenerationsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v1/generations/{generation_id}/content/retry-section',
+      path: {
+        'generation_id': generationId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+  /**
+   * Run Qa
+   * @returns QAResponse Successful Response
+   * @throws ApiError
+   */
+  public static generationsRunQa({
+    generationId,
+    requestBody,
+  }: {
+    generationId: string,
+    requestBody: QARequest,
+  }): CancelablePromise<QAResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v1/generations/{generation_id}/qa',
       path: {
         'generation_id': generationId,
       },
