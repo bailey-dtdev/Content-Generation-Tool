@@ -14,7 +14,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [status, fetchMe]);
 
   if (status === "unknown") {
-    return <div className="p-8 text-sm text-slate-500">Loading…</div>;
+    return (
+      <div style={{ padding: 32, fontSize: 13, color: "var(--ink-5)" }}>
+        Loading…
+      </div>
+    );
   }
   if (status === "unauthenticated") {
     return <Navigate to="/login" replace />;

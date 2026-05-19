@@ -1,43 +1,129 @@
+import { useState } from "react";
+
 import type { QANote } from "@/api/generated";
+import { Chip } from "@/components/ui/Chip";
+import { Icon } from "@/components/ui/Icon";
 
-const severityStyles: Record<string, string> = {
-  error: "border-red-300 bg-red-50 text-red-800",
-  warning: "border-amber-300 bg-amber-50 text-amber-800",
-  info: "border-slate-300 bg-slate-50 text-slate-700",
-};
+const SEVERITY_RANK: Record<string, number> = { error: 0, warning: 1, info: 2 };
 
-const severityRank: Record<string, number> = { error: 0, warning: 1, info: 2 };
+type Filter = "all" | "error" | "warning" | "info";
 
-export function QAPanel({ notes }: { notes: QANote[] }) {
+export function QAPanel({
+  notes,
+  running,
+}: {
+  notes: QANote[];
+  running?: boolean;
+}) {
+  const [filter, setFilter] = useState<Filter>("all");
+
+  if (running) {
+    return (
+      <div className="qa-rail">
+        <div className="qa-rail__head">
+          <div className="qa-rail__title">QA</div>
+          <Chip variant="aqua" dot>
+            Running
+          </Chip>
+        </div>
+        <div className="qa-rail__empty">
+          Checking banned words, reading level, E-E-A-T, internal links and
+          keyword usage…
+        </div>
+      </div>
+    );
+  }
+
   if (notes.length === 0) {
     return (
-      <aside className="rounded-lg border bg-white p-4 text-sm text-slate-500">
-        No QA notes yet — run QA to review the content.
-      </aside>
+      <div className="qa-rail">
+        <div className="qa-rail__head">
+          <div className="qa-rail__title">QA</div>
+          <Chip variant="info">Not run</Chip>
+        </div>
+        <div className="qa-rail__empty">
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: "var(--ink-8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 12px",
+              color: "var(--ink-4)",
+            }}
+          >
+            <Icon name="check" size={20} stroke={2} />
+          </div>
+          <div style={{ fontWeight: 600, color: "var(--ink-2)", marginBottom: 4 }}>
+            No QA notes yet
+          </div>
+          <div>
+            Run QA once the content is generated to surface banned words,
+            reading level, E-E-A-T and link issues.
+          </div>
+        </div>
+      </div>
     );
   }
 
   const sorted = [...notes].sort(
-    (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
+    (a, b) =>
+      (SEVERITY_RANK[String(a.severity)] ?? 3) -
+      (SEVERITY_RANK[String(b.severity)] ?? 3),
+  );
+  const counts = notes.reduce<Record<string, number>>((acc, note) => {
+    const key = String(note.severity);
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+  const shown =
+    filter === "all"
+      ? sorted
+      : sorted.filter((note) => String(note.severity) === filter);
+
+  const filterButton = (key: Filter, label: string, count: number) => (
+    <button
+      type="button"
+      className={`qa-rail__filter ${filter === key ? "is-active" : ""}`}
+      onClick={() => setFilter(key)}
+    >
+      {key !== "all" ? <span className={`sev-dot sev-dot--${key}`} /> : null}
+      {label} <span style={{ opacity: 0.6 }}>{count}</span>
+    </button>
   );
 
   return (
-    <aside className="space-y-2">
-      <h2 className="text-sm font-semibold">QA notes ({notes.length})</h2>
-      {sorted.map((note, index) => (
-        <div
-          key={index}
-          className={`rounded-md border px-3 py-2 text-sm ${
-            severityStyles[note.severity] ?? severityStyles.info
-          }`}
-        >
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold uppercase">{note.severity}</span>
-            <span className="text-slate-500">{note.category}</span>
+    <div className="qa-rail">
+      <div className="qa-rail__head">
+        <div>
+          <div className="qa-rail__title">QA</div>
+          <div className="qa-rail__count">
+            {notes.length} note{notes.length === 1 ? "" : "s"} · worst first
           </div>
-          <p className="mt-0.5">{note.message}</p>
         </div>
-      ))}
-    </aside>
+      </div>
+      <div className="qa-rail__filters">
+        {filterButton("all", "All", notes.length)}
+        {filterButton("error", "Errors", counts.error ?? 0)}
+        {filterButton("warning", "Warnings", counts.warning ?? 0)}
+        {filterButton("info", "Info", counts.info ?? 0)}
+      </div>
+      <div className="qa-rail__list">
+        {shown.map((note, index) => (
+          <div key={index} className="qa-rail__item">
+            <div className="qa-rail__item-head">
+              <span className={`qa-rail__sev sev-${String(note.severity)}`}>
+                {note.severity}
+              </span>
+              <span className="qa-rail__cat">{note.category}</span>
+            </div>
+            <div className="qa-rail__msg">{note.message}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

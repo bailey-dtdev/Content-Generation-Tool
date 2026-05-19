@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SitemapsService, type SitemapResponse } from "@/api/generated";
-import { inputClass } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
+import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { uploadSitemap } from "@/lib/http";
 
 export function SitemapUpload({ clientId }: { clientId: string }) {
@@ -9,6 +12,7 @@ export function SitemapUpload({ clientId }: { clientId: string }) {
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const loadSitemap = useCallback(() => {
     SitemapsService.sitemapsGetSitemap({ clientId })
@@ -47,51 +51,96 @@ export function SitemapUpload({ clientId }: { clientId: string }) {
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-white p-4">
-      <h2 className="text-sm font-semibold">Sitemap</h2>
-      <p className="text-sm text-slate-500">
-        {sitemap
-          ? `${sitemap.urls.length} URL(s) from the ${sitemap.source_type} upload.`
-          : "No sitemap uploaded yet."}
-      </p>
+    <div className="card">
+      <div className="card__head">
+        <div>
+          <div className="card__title">Sitemap</div>
+          <div className="card__sub">
+            Feeds the internal-link picker during outline &amp; content.
+          </div>
+        </div>
+        {sitemap ? (
+          <Chip variant="ok" icon="check">
+            {sitemap.urls.length} URLs from {sitemap.source_type}
+          </Chip>
+        ) : null}
+      </div>
 
-      <div>
-        <span className="block text-sm font-medium text-slate-700">
-          Upload XML sitemap
-        </span>
+      <div className="dropzone">
+        <div className="dropzone__icon">
+          <Icon name="upload" size={20} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div className="dropzone__t">Upload sitemap.xml</div>
+          <div className="dropzone__p">Replaces the existing URL list.</div>
+        </div>
         <input
+          ref={fileRef}
           type="file"
           accept=".xml,application/xml,text/xml"
-          disabled={busy}
+          style={{ display: "none" }}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void uploadFile(file);
           }}
-          className="mt-1 text-sm"
         />
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+        >
+          Choose file
+        </Button>
       </div>
 
-      <div>
-        <span className="block text-sm font-medium text-slate-700">
-          Or paste URLs (one per line)
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          margin: "20px 0 10px",
+        }}
+      >
+        <div style={{ flex: 1, height: 1, background: "var(--ink-8)" }} />
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--ink-5)",
+          }}
+        >
+          or paste URLs
         </span>
+        <div style={{ flex: 1, height: 1, background: "var(--ink-8)" }} />
+      </div>
+
+      <Field label="Paste URLs" hint="One per line">
         <textarea
+          className="textarea"
           rows={4}
           value={pasted}
           onChange={(event) => setPasted(event.target.value)}
-          className={`mt-1 ${inputClass}`}
         />
-        <button
-          type="button"
-          onClick={() => void uploadPasted()}
+      </Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon="refresh"
           disabled={busy || !pasted.trim()}
-          className="mt-2 rounded-md border px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50"
+          onClick={() => void uploadPasted()}
         >
           Save pasted URLs
-        </button>
+        </Button>
       </div>
-
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
-    </section>
+      {error ? (
+        <p style={{ fontSize: 12, color: "var(--status-danger)", marginTop: 8 }}>
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

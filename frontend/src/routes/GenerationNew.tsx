@@ -1,12 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
-import { ClientsService, GenerationsService, type ClientResponse } from "@/api/generated";
-import { GenerationInput } from "@/api/generated";
-import { Field, inputClass } from "@/components/ui/Field";
+import {
+  ClientsService,
+  GenerationInput,
+  GenerationsService,
+  type ClientResponse,
+} from "@/api/generated";
+import { Stepper } from "@/components/Stepper";
+import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { useGenerationStore } from "@/stores/generation";
 
 const schema = z.object({
@@ -39,6 +46,7 @@ export function GenerationNew() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -60,6 +68,12 @@ export function GenerationNew() {
       .then(setClients)
       .catch(() => setClients([]));
   }, []);
+
+  const selectedClientId = watch("client_id");
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === selectedClientId),
+    [clients, selectedClientId],
+  );
 
   const submit = async (values: FormValues) => {
     setSubmitting(true);
@@ -86,61 +100,248 @@ export function GenerationNew() {
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4">
-      <h1 className="text-lg font-semibold">New generation</h1>
+    <>
+      <div className="main__head">
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--ink-5)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span>Generations</span>
+          <Icon name="chevron-right" size={12} />
+          <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>
+            New generation
+          </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <h1 className="page-title">New generation</h1>
+            <p className="page-sub">
+              Tell Content Studio what to write. We'll pull competitors and
+              sitemap matches next.
+            </p>
+          </div>
+          <Stepper current={0} />
+        </div>
+      </div>
 
-      <Field label="Client" error={errors.client_id?.message}>
-        <select className={inputClass} {...register("client_id")}>
-          <option value="">Select a client…</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Content type">
-        <select className={inputClass} {...register("content_type")}>
-          <option value={GenerationInput.content_type.SERVICE_PAGE}>Service page</option>
-          <option value={GenerationInput.content_type.PLP}>Product listing page</option>
-          <option value={GenerationInput.content_type.PDP}>Product detail page</option>
-          <option value={GenerationInput.content_type.BLOG}>Blog post</option>
-        </select>
-      </Field>
-      <Field label="Primary keyword" error={errors.primary_keyword?.message}>
-        <input className={inputClass} {...register("primary_keyword")} />
-      </Field>
-      <Field label="Secondary keywords (one per line)">
-        <textarea rows={3} className={inputClass} {...register("secondary_keywords")} />
-      </Field>
-      <Field label="Search intent">
-        <select className={inputClass} {...register("search_intent")}>
-          <option value={GenerationInput.search_intent.INFORMATIONAL}>Informational</option>
-          <option value={GenerationInput.search_intent.COMMERCIAL}>Commercial</option>
-          <option value={GenerationInput.search_intent.TRANSACTIONAL}>Transactional</option>
-          <option value={GenerationInput.search_intent.NAVIGATIONAL}>Navigational</option>
-        </select>
-      </Field>
-      <Field label="Competitor URLs (one per line)">
-        <textarea rows={3} className={inputClass} {...register("competitor_urls")} />
-      </Field>
-      <Field label="Target URL (optional)">
-        <input className={inputClass} {...register("target_url")} />
-      </Field>
-      <Field label="Target word count" error={errors.target_word_count?.message}>
-        <input type="number" className={inputClass} {...register("target_word_count")} />
-      </Field>
-      <Field label="Additional context">
-        <textarea rows={4} className={inputClass} {...register("additional_context")} />
-      </Field>
+      <form onSubmit={handleSubmit(submit)}>
+        <div
+          className="main__body"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 320px",
+            gap: 24,
+            alignItems: "start",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className="card">
+              <div className="card__head">
+                <div>
+                  <div className="card__title">Subject</div>
+                  <div className="card__sub">
+                    Who this is for and what we're writing.
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                <Field label="Client" required error={errors.client_id?.message}>
+                  <select className="select" {...register("client_id")}>
+                    <option value="">Select a client…</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Content type">
+                  <select className="select" {...register("content_type")}>
+                    <option value={GenerationInput.content_type.SERVICE_PAGE}>
+                      Service page
+                    </option>
+                    <option value={GenerationInput.content_type.PLP}>
+                      Product listing page
+                    </option>
+                    <option value={GenerationInput.content_type.PDP}>
+                      Product detail page
+                    </option>
+                    <option value={GenerationInput.content_type.BLOG}>
+                      Blog post
+                    </option>
+                  </select>
+                </Field>
+                <Field
+                  label="Primary keyword"
+                  required
+                  error={errors.primary_keyword?.message}
+                >
+                  <input className="input" {...register("primary_keyword")} />
+                </Field>
+                <Field label="Search intent">
+                  <select className="select" {...register("search_intent")}>
+                    <option value={GenerationInput.search_intent.INFORMATIONAL}>
+                      Informational
+                    </option>
+                    <option value={GenerationInput.search_intent.COMMERCIAL}>
+                      Commercial
+                    </option>
+                    <option value={GenerationInput.search_intent.TRANSACTIONAL}>
+                      Transactional
+                    </option>
+                    <option value={GenerationInput.search_intent.NAVIGATIONAL}>
+                      Navigational
+                    </option>
+                  </select>
+                </Field>
+                <Field label="Target URL" hint="Optional — for refreshes">
+                  <input className="input" {...register("target_url")} />
+                </Field>
+                <Field
+                  label="Target word count"
+                  error={errors.target_word_count?.message}
+                >
+                  <input
+                    className="input"
+                    type="number"
+                    {...register("target_word_count")}
+                  />
+                </Field>
+              </div>
+            </div>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-      >
-        {submitting ? "Preparing…" : "Start generation"}
-      </button>
-    </form>
+            <div className="card">
+              <div className="card__head">
+                <div>
+                  <div className="card__title">Research inputs</div>
+                  <div className="card__sub">
+                    Competitors and supporting keywords. We'll fetch what we can.
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Field label="Secondary keywords" hint="One per line">
+                  <textarea
+                    className="textarea"
+                    rows={4}
+                    {...register("secondary_keywords")}
+                  />
+                </Field>
+                <Field
+                  label="Competitor URLs"
+                  hint="One per line · we'll analyse up to 8"
+                >
+                  <textarea
+                    className="textarea"
+                    rows={4}
+                    {...register("competitor_urls")}
+                  />
+                </Field>
+                <Field
+                  label="Additional context"
+                  hint="Anything specific for this piece"
+                >
+                  <textarea
+                    className="textarea"
+                    rows={3}
+                    {...register("additional_context")}
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+
+          <aside
+            style={{
+              position: "sticky",
+              top: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
+            <div className="card" style={{ padding: 20 }}>
+              <div className="page-eyebrow" style={{ marginBottom: 12 }}>
+                Client snapshot
+              </div>
+              {selectedClient ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+                    {selectedClient.name}
+                  </div>
+                  <div className="kv">
+                    <span className="kv__k">Language</span>
+                    <span className="kv__v">{selectedClient.language_variant}</span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv__k">Reading level</span>
+                    <span className="kv__v">
+                      {selectedClient.reading_level_target || "—"}
+                    </span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv__k">Sentence length</span>
+                    <span className="kv__v">
+                      {selectedClient.sentence_length_preference || "—"}
+                    </span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv__k">Banned words</span>
+                    <span className="kv__v">
+                      {selectedClient.banned_words?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="kv">
+                    <span className="kv__k">Oxford comma</span>
+                    <span className="kv__v">
+                      {selectedClient.oxford_comma ? "On" : "Off"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: 12.5, color: "var(--ink-5)", lineHeight: 1.5 }}>
+                  Select a client to see the voice and style rules that will
+                  shape this generation.
+                </div>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              iconRight="arrow-right"
+              disabled={submitting}
+            >
+              {submitting ? "Starting…" : "Start generation"}
+            </Button>
+            <div
+              style={{ fontSize: 11.5, color: "var(--ink-5)", textAlign: "center" }}
+            >
+              Next: outline review
+            </div>
+          </aside>
+        </div>
+      </form>
+    </>
   );
 }

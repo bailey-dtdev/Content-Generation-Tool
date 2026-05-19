@@ -15,19 +15,20 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import type { OutlineSection } from "@/api/generated";
-import { inputClass } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 
-const actionButton =
-  "rounded-md border px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50";
-
-function SortableSection({
+function SortableCard({
+  index,
   section,
   onChange,
   onDelete,
+  onDuplicate,
 }: {
+  index: number;
   section: OutlineSection;
   onChange: (next: OutlineSection) => void;
   onDelete: () => void;
+  onDuplicate: () => void;
 }) {
   const id = section.section_id ?? "";
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
@@ -38,37 +39,50 @@ function SortableSection({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="flex items-start gap-2 rounded-md border bg-white p-3"
+      className="outline-card"
     >
-      <button
-        type="button"
-        className="cursor-grab px-1 text-slate-400"
+      <div
+        className="outline-card__grip"
         aria-label="Drag to reorder"
         {...attributes}
         {...listeners}
       >
-        ⠿
-      </button>
-      <div className="flex-1 space-y-2">
+        <Icon name="grip" size={16} />
+      </div>
+      <div className="outline-card__num">{index + 1}</div>
+      <div className="outline-card__body">
         <input
-          className={inputClass}
+          className="outline-card__h"
           value={section.heading}
+          aria-label="Section heading"
           onChange={(event) => onChange({ ...section, heading: event.target.value })}
         />
         <textarea
+          className="outline-card__b"
           rows={2}
-          className={inputClass}
           value={section.blurb}
+          aria-label="Section blurb"
           onChange={(event) => onChange({ ...section, blurb: event.target.value })}
         />
       </div>
-      <button
-        type="button"
-        onClick={onDelete}
-        className="text-sm text-red-600 hover:underline"
-      >
-        Remove
-      </button>
+      <div className="outline-card__actions">
+        <button
+          type="button"
+          className="icon-btn"
+          title="Duplicate"
+          onClick={onDuplicate}
+        >
+          <Icon name="plus" size={14} />
+        </button>
+        <button
+          type="button"
+          className="icon-btn icon-btn--danger"
+          title="Remove"
+          onClick={onDelete}
+        >
+          <Icon name="trash" size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -76,17 +90,9 @@ function SortableSection({
 export function OutlineEditor({
   sections,
   onSectionsChange,
-  onSave,
-  onRegenerate,
-  onApprove,
-  busy,
 }: {
   sections: OutlineSection[];
   onSectionsChange: (sections: OutlineSection[]) => void;
-  onSave: () => void;
-  onRegenerate: () => void;
-  onApprove: () => void;
-  busy: boolean;
 }) {
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -108,61 +114,38 @@ export function OutlineEditor({
     onSectionsChange(sections.filter((_, i) => i !== index));
   };
 
-  const addSection = () => {
-    onSectionsChange([
-      ...sections,
-      { section_id: crypto.randomUUID(), heading: "New section", blurb: "" },
-    ]);
+  const duplicateAt = (index: number) => {
+    const copy = [...sections];
+    copy.splice(index + 1, 0, {
+      ...sections[index],
+      section_id: crypto.randomUUID(),
+    });
+    onSectionsChange(copy);
   };
 
   return (
-    <div className="space-y-3">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={sections.map((s) => s.section_id ?? "")}
+        strategy={verticalListSortingStrategy}
       >
-        <SortableContext
-          items={sections.map((s) => s.section_id ?? "")}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-2">
-            {sections.map((section, index) => (
-              <SortableSection
-                key={section.section_id}
-                section={section}
-                onChange={(next) => updateAt(index, next)}
-                onDelete={() => deleteAt(index)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={addSection} className={actionButton}>
-          Add section
-        </button>
-        <button type="button" onClick={onSave} disabled={busy} className={actionButton}>
-          Save edits
-        </button>
-        <button
-          type="button"
-          onClick={onRegenerate}
-          disabled={busy}
-          className={actionButton}
-        >
-          Regenerate outline
-        </button>
-        <button
-          type="button"
-          onClick={onApprove}
-          disabled={busy}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
-          Approve &amp; continue
-        </button>
-      </div>
-    </div>
+        <div className="outline-list">
+          {sections.map((section, index) => (
+            <SortableCard
+              key={section.section_id}
+              index={index}
+              section={section}
+              onChange={(next) => updateAt(index, next)}
+              onDelete={() => deleteAt(index)}
+              onDuplicate={() => duplicateAt(index)}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }

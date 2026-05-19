@@ -5,6 +5,10 @@ import { GenerationsService } from "@/api/generated";
 import { ContentEditor } from "@/components/ContentEditor";
 import { CostBadge } from "@/components/CostBadge";
 import { QAPanel } from "@/components/QAPanel";
+import { Stepper } from "@/components/Stepper";
+import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
+import { Icon } from "@/components/ui/Icon";
 import { streamPost } from "@/lib/sse";
 import { htmlToText, textToHtml } from "@/lib/utils";
 import { useGenerationStore } from "@/stores/generation";
@@ -19,11 +23,17 @@ interface StreamEventData {
   total_cost_usd?: string;
 }
 
-const severityColor: Record<string, string> = {
-  error: "text-red-600",
-  warning: "text-amber-600",
-  info: "text-slate-500",
+const TYPE_LABEL: Record<string, string> = {
+  service_page: "Service page",
+  plp: "Product listing page",
+  pdp: "Product detail page",
+  blog: "Blog post",
 };
+
+function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
 
 export function GenerationContent() {
   const { generationId } = useParams<{ generationId: string }>();
@@ -37,33 +47,40 @@ export function GenerationContent() {
 
   const [mode, setMode] = useState<Mode>("sequential");
   const [streaming, setStreaming] = useState(false);
+  const [streamingSectionId, setStreamingSectionId] = useState<string | null>(null);
   const [qaRunning, setQaRunning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [docUrl, setDocUrl] = useState<string | null>(null);
   const [usageVersion, setUsageVersion] = useState(0);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
-  const [totalCost, setTotalCost] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
   if (!generation || generation.id !== generationId) {
     return (
-      <p className="text-sm text-slate-500">
-        No active generation in this session.{" "}
-        <Link to="/generations/new" className="text-blue-600 hover:underline">
-          Start a new one
-        </Link>
-        .
-      </p>
+      <div className="main__body">
+        <p style={{ fontSize: 13, color: "var(--ink-5)" }}>
+          No active generation in this session.{" "}
+          <Link to="/generations/new" style={{ color: "var(--ink-1)" }}>
+            Start a new one
+          </Link>
+          .
+        </p>
+      </div>
     );
   }
+
+  const keyword = String(generation.input.primary_keyword ?? "");
+  const intent = String(generation.input.search_intent ?? "");
+  const wordTarget = String(generation.input.target_word_count ?? "");
 
   const handleEvent = (event: string, data: unknown) => {
     const payload = data as StreamEventData;
     const sectionId = payload.section_id ?? "";
     if (event === "section_start") {
       startSection(sectionId, payload.heading ?? "Section");
+      setStreamingSectionId(sectionId);
       setSectionErrors((prev) => {
         const next = { ...prev };
         delete next[sectionId];
@@ -77,7 +94,7 @@ export function GenerationContent() {
         [sectionId]: payload.message ?? "Section generation failed.",
       }));
     } else if (event === "generation_complete") {
-      setTotalCost(payload.total_cost_usd ?? null);
+      setStreamingSectionId(null);
     }
   };
 
@@ -91,9 +108,13 @@ export function GenerationContent() {
       body,
       {
         onEvent: handleEvent,
-        onError: () => setStreaming(false),
+        onError: () => {
+          setStreaming(false);
+          setStreamingSectionId(null);
+        },
         onDone: () => {
           setStreaming(false);
+          setStreamingSectionId(null);
           setUsageVersion((version) => version + 1);
         },
       },
@@ -102,7 +123,7 @@ export function GenerationContent() {
   };
 
   const generate = () => {
-    setTotalCost(null);
+    setDocUrl(null);
     setQaNotes([]);
     run(`/api/v1/generations/${generation.id}/content/stream`, { mode });
   };
@@ -152,130 +173,351 @@ export function GenerationContent() {
   };
 
   const sections = Object.entries(content);
+  const hasContent = sections.length > 0;
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-lg font-semibold">Content</h1>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-1 text-sm">
-          <input
-            type="radio"
-            name="mode"
-            checked={mode === "sequential"}
-            onChange={() => setMode("sequential")}
-          />
-          Sequential (per section)
-        </label>
-        <label className="flex items-center gap-1 text-sm">
-          <input
-            type="radio"
-            name="mode"
-            checked={mode === "single_call"}
-            onChange={() => setMode("single_call")}
-          />
-          Single call
-        </label>
-        <button
-          type="button"
-          onClick={generate}
-          disabled={streaming}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+    <>
+      <div className="main__head">
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--ink-5)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
         >
-          {streaming
-            ? "Generating…"
-            : sections.length
-              ? "Regenerate"
-              : "Generate content"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void runQa()}
-          disabled={streaming || qaRunning || sections.length === 0}
-          className="rounded-md border px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
+          <span>Generations</span>
+          <Icon name="chevron-right" size={12} />
+          <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>{keyword}</span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 24,
+            flexWrap: "wrap",
+          }}
         >
-          {qaRunning ? "Running QA…" : "Run QA"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void exportDoc()}
-          disabled={streaming || exporting || sections.length === 0}
-          className="rounded-md border px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50"
-        >
-          {exporting ? "Exporting…" : "Export to Google Docs"}
-        </button>
+          <div>
+            <h1 className="page-title">Content</h1>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                marginTop: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <Chip variant="dark">
+                {TYPE_LABEL[generation.content_type] ?? generation.content_type}
+              </Chip>
+              {intent ? <Chip variant="outline">{intent} intent</Chip> : null}
+              {wordTarget ? (
+                <Chip variant="outline">{wordTarget} words target</Chip>
+              ) : null}
+            </div>
+          </div>
+          <Stepper current={2} />
+        </div>
       </div>
 
-      {docUrl ? (
-        <p className="text-sm text-slate-600">
-          Exported —{" "}
-          <a
-            href={docUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline"
+      <div
+        className="main__body"
+        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+      >
+        <div className="control-bar">
+          <div className="control-bar__group">
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 600,
+                color: "var(--ink-5)",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              Mode
+            </span>
+            <div className="radio-seg">
+              <button
+                type="button"
+                className={mode === "sequential" ? "is-active" : ""}
+                onClick={() => setMode("sequential")}
+              >
+                <Icon name="list" size={13} />
+                Sequential
+              </button>
+              <button
+                type="button"
+                className={mode === "single_call" ? "is-active" : ""}
+                onClick={() => setMode("single_call")}
+              >
+                <Icon name="send" size={13} />
+                Single call
+              </button>
+            </div>
+          </div>
+          <div className="control-bar__sep" />
+          <div className="control-bar__group">
+            <Button
+              variant="primary"
+              size="sm"
+              icon={streaming ? "circle-dot" : "sparkles"}
+              disabled={streaming}
+              onClick={generate}
+            >
+              {streaming
+                ? "Generating…"
+                : hasContent
+                  ? "Regenerate"
+                  : "Generate content"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={qaRunning ? "circle-dot" : "check"}
+              disabled={!hasContent || streaming || qaRunning}
+              onClick={() => void runQa()}
+            >
+              {qaRunning ? "Running QA…" : "Run QA"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={exporting ? "circle-dot" : "google-docs"}
+              disabled={!hasContent || streaming || exporting}
+              onClick={() => void exportDoc()}
+            >
+              {exporting ? "Exporting…" : "Export to Docs"}
+            </Button>
+          </div>
+          <div className="control-bar__spacer" />
+          <CostBadge generationId={generation.id} refreshKey={usageVersion} />
+        </div>
+
+        {docUrl ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 18px",
+              background: "var(--aqua-soft)",
+              border: "1px solid var(--aqua)",
+              borderRadius: 12,
+            }}
           >
-            open the Google Doc
-          </a>
-          .
-        </p>
-      ) : null}
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: "var(--ink-10)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "0 0 auto",
+              }}
+            >
+              <Icon name="check" size={16} stroke={2.5} />
+            </div>
+            <div style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>
+              Exported to Google Docs
+            </div>
+            <a
+              href={docUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn--primary btn--sm"
+              style={{ textDecoration: "none" }}
+            >
+              Open the Google Doc
+              <Icon name="external" />
+            </a>
+          </div>
+        ) : null}
 
-      <CostBadge generationId={generation.id} refreshKey={usageVersion} />
+        {streaming ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 18px",
+              background: "var(--ink-1)",
+              borderRadius: 12,
+              color: "var(--ink-10)",
+            }}
+          >
+            <span className="section-status__pulse" />
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>
+              Streaming content…
+            </div>
+          </div>
+        ) : null}
 
-      <div className="flex gap-6">
-        <div className="flex-1 space-y-4">
-          {sections.map(([sectionId, section]) => {
-            const sectionNotes = qaNotes.filter((n) => n.section_id === sectionId);
-            return (
-              <section key={sectionId} className="space-y-2">
-                <h2 className="font-medium">{section.heading}</h2>
-                {streaming ? (
-                  <div className="whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm text-slate-700">
-                    {section.text || <span className="text-slate-400">…</span>}
+        <div className="ws">
+          <div className="ws__main">
+            {!hasContent ? (
+              <div className="empty" style={{ padding: "90px 24px" }}>
+                <div className="empty__icon">
+                  <Icon name="sparkles" size={26} stroke={1.5} />
+                </div>
+                <div className="empty__h">Ready to generate</div>
+                <div className="empty__p">
+                  Sequential mode streams each section in turn so you can spot
+                  drift early. Single call returns the whole draft at once.
+                </div>
+                <Button variant="primary" size="lg" icon="sparkles" onClick={generate}>
+                  Generate content
+                </Button>
+              </div>
+            ) : (
+              sections.map(([sectionId, section], index) => {
+                const plain = section.html
+                  ? htmlToText(section.html)
+                  : section.text;
+                const sectionNotes = qaNotes.filter(
+                  (note) => note.section_id === sectionId,
+                );
+                const errored = Boolean(sectionErrors[sectionId]);
+                const isStreaming = streamingSectionId === sectionId;
+                const status = errored
+                  ? "error"
+                  : isStreaming
+                    ? "streaming"
+                    : "done";
+                return (
+                  <div key={sectionId} className="section-card">
+                    <div className="section-card__head">
+                      <div className="section-card__h-left">
+                        <div className="section-card__num">{index + 1}</div>
+                        <div>
+                          <div className="section-card__h">{section.heading}</div>
+                          <div className="section-card__meta">
+                            <span>
+                              <strong>{wordCount(plain)}</strong> words
+                            </span>
+                            {sectionNotes.length ? (
+                              <>
+                                <span>·</span>
+                                <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>
+                                  {sectionNotes.length} QA note
+                                  {sectionNotes.length === 1 ? "" : "s"}
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`section-status section-status--${status}`}>
+                        <span className="section-status__pulse" />
+                        <span>
+                          {status === "streaming"
+                            ? "Streaming"
+                            : status === "error"
+                              ? "Failed"
+                              : "Done"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {errored ? (
+                      <div
+                        style={{
+                          padding: "18px 24px",
+                          display: "flex",
+                          gap: 14,
+                          alignItems: "flex-start",
+                          background: "rgba(198,56,56,0.04)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: "rgba(198,56,56,0.12)",
+                            color: "var(--status-danger)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flex: "0 0 auto",
+                          }}
+                        >
+                          <Icon name="alert" size={15} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              marginBottom: 4,
+                            }}
+                          >
+                            {sectionErrors[sectionId]}
+                          </div>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon="refresh"
+                            disabled={streaming}
+                            onClick={() => retrySection(sectionId)}
+                          >
+                            Retry section
+                          </Button>
+                        </div>
+                      </div>
+                    ) : streaming ? (
+                      <div className="prose">
+                        {section.text || (
+                          <span className="placeholder">Waiting…</span>
+                        )}
+                        {isStreaming ? <span className="caret" /> : null}
+                      </div>
+                    ) : (
+                      <ContentEditor
+                        initialHtml={section.html ?? textToHtml(section.text)}
+                        onChange={(html) => setSectionHtml(sectionId, html)}
+                      />
+                    )}
+
+                    {sectionNotes.length > 0 ? (
+                      <div className="section-qa">
+                        {sectionNotes.map((note, noteIndex) => (
+                          <div
+                            key={noteIndex}
+                            className={`section-qa__row sev-${String(note.severity)}`}
+                          >
+                            <div
+                              className={`section-qa__sev-bar sev-${String(note.severity)}`}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div className="section-qa__cat">
+                                {note.severity} · {note.category}
+                              </div>
+                              <div className="section-qa__msg">{note.message}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                ) : (
-                  <ContentEditor
-                    initialHtml={section.html ?? textToHtml(section.text)}
-                    onChange={(html) => setSectionHtml(sectionId, html)}
-                  />
-                )}
-                {sectionErrors[sectionId] ? (
-                  <div className="flex items-center gap-3 text-sm text-red-600">
-                    <span>{sectionErrors[sectionId]}</span>
-                    <button
-                      type="button"
-                      onClick={() => retrySection(sectionId)}
-                      disabled={streaming}
-                      className="rounded border px-2 py-0.5 text-slate-700 hover:bg-slate-100"
-                    >
-                      Retry section
-                    </button>
-                  </div>
-                ) : null}
-                {sectionNotes.length > 0 ? (
-                  <ul className="space-y-0.5 text-xs">
-                    {sectionNotes.map((note, index) => (
-                      <li key={index} className={severityColor[note.severity] ?? ""}>
-                        [{note.severity}] {note.message}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </section>
-            );
-          })}
-          {totalCost !== null ? (
-            <p className="text-sm text-slate-500">
-              Generation complete — estimated cost ${totalCost}.
-            </p>
+                );
+              })
+            )}
+          </div>
+
+          {hasContent ? (
+            <div className="ws__qa">
+              <QAPanel notes={qaNotes} running={qaRunning} />
+            </div>
           ) : null}
         </div>
-
-        <div className="w-72 shrink-0">
-          <QAPanel notes={qaNotes} />
-        </div>
       </div>
-    </div>
+    </>
   );
 }

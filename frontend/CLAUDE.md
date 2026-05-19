@@ -7,8 +7,11 @@ specifics.
 ## Stack
 
 Vite · React 18 · TypeScript 5 (strict) · React Router v6 · Zustand ·
-React Hook Form + Zod · TipTap v2 · `@dnd-kit/sortable` · Tailwind ·
-shadcn/ui (selective) · `pnpm`. Full list: arch §3.
+React Hook Form + Zod · TipTap v2 · `@dnd-kit/sortable` · `pnpm`.
+
+Styling is the in-repo **design system** (`src/styles/tokens.css` +
+`app.css`), ported from `frontend/design/`. Semantic class names, not
+utility classes — Tailwind is not used.
 
 ## Layout (`frontend/src/`)
 
@@ -17,10 +20,11 @@ shadcn/ui (selective) · `pnpm`. Full list: arch §3.
 | `main.tsx`       | Entry point                                         |
 | `App.tsx`        | Router + route guard                                |
 | `api/generated/` | OpenAPI client — generated, do not hand-edit        |
-| `lib/`           | `http.ts`, `sse.ts`, `utils.ts`                     |
+| `lib/`           | `http.ts`, `sse.ts`, `utils.ts`, `sentry.ts`        |
 | `stores/`        | Zustand stores (`auth`, `generation`)               |
+| `styles/`        | Design-system CSS (`tokens.css`, `app.css`)         |
 | `routes/`        | Page-level components, one per route                |
-| `components/`    | Reusable components; `components/ui/` = shadcn       |
+| `components/`    | Reusable components; `components/ui/` = primitives  |
 
 ## Conventions
 
@@ -36,8 +40,9 @@ shadcn/ui (selective) · `pnpm`. Full list: arch §3.
   use the `fetch` + `ReadableStream` wrapper, not native `EventSource`.
   Components own an `AbortController` and abort on unmount.
 - **Strict TypeScript.** No `any`. `tsc --noEmit` must pass.
-- **Tailwind for styling.** Internal tool — speed over polish. Pull
-  shadcn primitives into `components/ui/` only as needed.
+- **Styling via the design system.** Use the semantic classes from
+  `src/styles/` (`.card`, `.btn`, `.field`, …). Shared primitives —
+  `Icon`, `Button`, `Chip`, `Field` — live in `components/ui/`.
 - **Forms:** React Hook Form + Zod schemas for the input step.
 
 ## Commands
