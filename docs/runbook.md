@@ -27,27 +27,33 @@ Do these in order; later steps depend on earlier outputs.
 4. Create an **OAuth 2.0 Client ID** (type: Web application). Add authorized
    redirect URIs:
    - `http://localhost:8000/api/v1/auth/callback` (local dev)
-   - `https://<fly-app>.fly.dev/api/v1/auth/callback` (added after 2.4)
+   - `https://<netlify-site>.netlify.app/api/v1/auth/callback` (prod — added
+     after 2.4). Use the **Netlify** host, not Fly: the callback must route
+     through Netlify's `/api` proxy so it shares an origin with `/auth/login`,
+     else the `oauth_state` cookie is missing and login fails with 400.
 5. Keep the **client ID** and **client secret**.
 
 ### 2.2 Database (Neon)
 
-1. Create a Neon project; note the **pooled** connection string.
+1. Create a Neon project in the **Sydney** region (co-located with the Fly
+   backend); note the **pooled** connection string.
 2. Convert it to the async form for the app:
-   `postgresql+asyncpg://USER:PASSWORD@HOST/DB`.
+   `postgresql+asyncpg://USER:PASSWORD@HOST/DB?ssl=require`. Drop Neon's
+   `sslmode` and `channel_binding` query params — asyncpg rejects them;
+   `ssl=require` is the asyncpg/SQLAlchemy equivalent.
    Migrations are applied automatically by the Fly release command.
 
 ### 2.3 Backend (Fly.io)
 
 1. `cd backend && flyctl launch --no-deploy` (or `flyctl apps create`).
    If `content-gen-backend` is taken, pick another name and update it in
-   `backend/fly.toml` and the `/api` proxy in `frontend/netlify.toml`.
+   `backend/fly.toml` and the `/api` proxy in `netlify.toml` (repo root).
 2. Set secrets:
    ```
    flyctl secrets set \
      DATABASE_URL=... ANTHROPIC_API_KEY=... \
      GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... \
-     GOOGLE_REDIRECT_URI=https://<fly-app>.fly.dev/api/v1/auth/callback \
+     GOOGLE_REDIRECT_URI=https://<netlify-site>.netlify.app/api/v1/auth/callback \
      JWT_SECRET=<32+ random bytes> FERNET_KEY=<Fernet.generate_key()> \
      ALLOWED_EMAIL_DOMAIN=digitaltreasury.com.au \
      FRONTEND_ORIGIN=https://<netlify-site>.netlify.app \
@@ -58,15 +64,19 @@ Do these in order; later steps depend on earlier outputs.
 
 ### 2.4 Frontend (Netlify)
 
-1. Create a Netlify site from the GitHub repo; set the **base directory**
-   to `frontend`.
+1. Create a Netlify site from the GitHub repo. Leave the build base
+   directory at the repo root — Netlify reads `netlify.toml` only from the
+   base directory, and the root `netlify.toml` sets `base`, the build
+   command, and the publish directory itself.
 2. Set env var `VITE_API_BASE_URL` to empty (same-origin; `/api` is proxied
    by `netlify.toml`).
 3. Deploy. The `netlify.toml` proxy forwards `/api/*` to the Fly backend.
 
 ### 2.5 Wire-up
 
-1. Add the real Fly callback URL to the GCP OAuth client (step 2.1.4).
+1. Add the real Netlify callback URL
+   (`https://<netlify-site>.netlify.app/api/v1/auth/callback`) to the GCP
+   OAuth client (step 2.1.4).
 2. Set the `FRONTEND_ORIGIN` Fly secret to the Netlify URL (CORS).
 3. Smoke test: sign in, create a client, run a generation, export a Doc.
 

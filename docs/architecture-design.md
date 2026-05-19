@@ -115,6 +115,7 @@ Single monorepo. Plain folders — no pnpm workspaces or Turborepo (FE and BE sh
 content-gen/
 ├── README.md
 ├── docker-compose.yml                # Local dev: postgres + backend + frontend
+├── netlify.toml                      # Netlify build config + /api proxy
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml                    # Lint + test on PR
@@ -194,7 +195,6 @@ content-gen/
     ├── tsconfig.json
     ├── vite.config.ts
     ├── tailwind.config.ts
-    ├── netlify.toml
     ├── .env.example
     ├── index.html
     ├── public/
@@ -903,16 +903,18 @@ Fly secrets to set:
 
 ### 11.2 Frontend on Netlify
 
-`frontend/netlify.toml`:
+`netlify.toml` (repo root — Netlify reads it only from the build base
+directory, so it cannot live under `frontend/`):
 
 ```toml
 [build]
+  base = "frontend"
   command = "pnpm install --frozen-lockfile && pnpm build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
-  PNPM_VERSION = "9"
+  NODE_VERSION = "22"
+  PNPM_VERSION = "11"
 
 [[redirects]]
   from = "/api/*"
@@ -1010,7 +1012,7 @@ FE Sentry too (browser SDK), captures React errors and unhandled promise rejecti
 Suggested order for the agent. Each step should be a commit/PR.
 
 1. **Repo scaffold.** Create the folder structure per §4. Empty files where needed. README and this doc copied in.
-2. **GCP project setup (human task).** Create a GCP project under the `digitaltreasury.com.au` workspace. Enable Google Drive API and Google Docs API. Create an OAuth 2.0 Client ID (type: Web application). Configure authorized redirect URIs (`http://localhost:8000/api/v1/auth/callback` for dev, `https://<fly-app>.fly.dev/api/v1/auth/callback` for prod). Configure OAuth consent screen with scopes: `email`, `profile`, `openid`, `drive.file`. Restrict to internal users. Hand the client ID and secret to the build process.
+2. **GCP project setup (human task).** Create a GCP project under the `digitaltreasury.com.au` workspace. Enable Google Drive API and Google Docs API. Create an OAuth 2.0 Client ID (type: Web application). Configure authorized redirect URIs (`http://localhost:8000/api/v1/auth/callback` for dev, `https://<netlify-site>.netlify.app/api/v1/auth/callback` for prod — the prod callback routes through Netlify's `/api` proxy so it shares an origin with the login request). Configure OAuth consent screen with scopes: `email`, `profile`, `openid`, `drive.file`. Restrict to internal users. Hand the client ID and secret to the build process.
 3. **Backend skeleton.** `pyproject.toml` with all deps, `app/main.py` with healthcheck, `app/config.py` with settings, `Dockerfile`. Verify `docker compose up` boots a healthcheck-passing backend.
 4. **Database + first migration.** `app/db.py`, `app/models/base.py`, alembic init. First migration creates all tables per §8.
 5. **Auth flow end-to-end.** Implement `/auth/login`, `/auth/callback`, `/auth/me`, `/auth/logout`. Session JWT + cookie. Domain check. Manual smoke test by signing in.
@@ -1026,7 +1028,7 @@ Suggested order for the agent. Each step should be a commit/PR.
 15. **Google Docs export.** Access token refresh helper. HTML → Docs `batchUpdate` mapping. FE export button.
 16. **Cost tracking dashboards.** Per-generation indicator in the active flow. Per-client cumulative on client detail page. Per-user and org-wide on `/usage`.
 17. **CI workflows.** Ruff + mypy + pytest on PR. ESLint + tsc + vitest. Build check.
-18. **Production deploy.** Fly app creation, secrets, first deploy. Netlify site creation, env vars, first deploy. Update GCP redirect URI with the real Fly hostname. Smoke test end-to-end in prod.
+18. **Production deploy.** Fly app creation, secrets, first deploy. Netlify site creation, env vars, first deploy. Update GCP redirect URI with the real Netlify hostname. Smoke test end-to-end in prod.
 19. **Sentry setup.** Project per env (dev/prod), DSNs configured.
 
 ---
