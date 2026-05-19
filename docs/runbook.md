@@ -82,7 +82,10 @@ Do these in order; later steps depend on earlier outputs.
 
 ### 2.6 CI/CD (GitHub)
 
-- Add repository secrets: `FLY_API_TOKEN`, `NETLIFY_BUILD_HOOK`.
+- Add the `FLY_API_TOKEN` repository secret (`flyctl tokens create deploy`)
+  so `deploy-backend.yml` can deploy after CI passes on `main`.
+- The frontend has no deploy workflow — Netlify rebuilds automatically from
+  its own GitHub connection on every push to `main`.
 - Enable branch protection on `main`: require the **CI** check to pass
   before merge.
 
