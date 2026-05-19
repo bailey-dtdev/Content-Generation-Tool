@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { GenerationsService, type GenerationUsage } from "@/api/generated";
 
+const money = (value: number): string => `$${value.toFixed(4)}`;
+
 export function CostBadge({
   generationId,
   refreshKey,
@@ -17,17 +19,25 @@ export function CostBadge({
       .catch(() => setUsage(null));
   }, [generationId, refreshKey]);
 
-  if (!usage || Number(usage.total_cost_usd) === 0) return null;
+  const stage = usage?.by_stage;
 
-  const stage = usage.by_stage;
   return (
-    <div className="rounded-md border bg-slate-50 px-3 py-2 text-xs text-slate-600">
-      <span className="font-semibold">
-        Generation cost ${Number(usage.total_cost_usd).toFixed(4)}
+    <div className="cost">
+      <span className="cost__label">Cost</span>
+      <span className="cost__total">
+        {money(Number(usage?.total_cost_usd ?? 0))}
       </span>
-      <span className="ml-2">
-        (outline ${Number(stage.outline).toFixed(4)}, content $
-        {Number(stage.content).toFixed(4)}, QA ${Number(stage.qa).toFixed(4)})
+      <span className="cost__pill">
+        <span className="cost__pill-label">Outline</span>
+        <span className="cost__pill-val">{money(Number(stage?.outline ?? 0))}</span>
+      </span>
+      <span className="cost__pill">
+        <span className="cost__pill-label">Content</span>
+        <span className="cost__pill-val">{money(Number(stage?.content ?? 0))}</span>
+      </span>
+      <span className="cost__pill">
+        <span className="cost__pill-label">QA</span>
+        <span className="cost__pill-val">{money(Number(stage?.qa ?? 0))}</span>
       </span>
     </div>
   );

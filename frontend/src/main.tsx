@@ -16,7 +16,11 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <Sentry.ErrorBoundary
-      fallback={<p className="p-8 text-sm text-slate-600">Something went wrong.</p>}
+      fallback={
+        <p style={{ padding: 32, fontSize: 14, color: "var(--ink-4)" }}>
+          Something went wrong.
+        </p>
+      }
     >
       <App />
     </Sentry.ErrorBoundary>

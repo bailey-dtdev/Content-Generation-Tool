@@ -1,23 +1,34 @@
-import type { ReactNode } from "react";
+import { cloneElement, type ReactElement, useId } from "react";
 
-export const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm " +
-  "focus:border-slate-500 focus:outline-none";
-
+// A labelled form field. The control is associated to its <label> via a
+// generated id so assistive tech (and getByLabelText) resolve it cleanly.
 export function Field({
   label,
+  hint,
+  required,
   error,
   children,
 }: {
   label: string;
+  hint?: string;
+  required?: boolean;
   error?: string;
-  children: ReactNode;
+  children: ReactElement<{ id?: string }>;
 }) {
+  const id = useId();
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
-      {children}
-      {error ? <span className="mt-1 block text-xs text-red-600">{error}</span> : null}
-    </label>
+    <div className="field">
+      <span className="field__label">
+        <label htmlFor={id}>{label}</label>
+        {required ? <span className="field__req">*</span> : null}
+        {hint ? <span className="field__hint">{hint}</span> : null}
+      </span>
+      {cloneElement(children, { id })}
+      {error ? (
+        <span style={{ fontSize: "11.5px", color: "var(--status-danger)" }}>
+          {error}
+        </span>
+      ) : null}
+    </div>
   );
 }

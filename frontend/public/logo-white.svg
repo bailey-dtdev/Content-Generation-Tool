@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 70" fill="none">
+  <g fill="#FFFFFF">
+    <path d="M6 6 h22 a26 26 0 0 1 0 52 h-22 z"></path>
+    <rect x="32" y="10" width="40" height="9" rx="1"></rect>
+  </g>
+  <g fill="#FFFFFF" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif">
+    <text x="82" y="30" font-size="18" font-weight="600" letter-spacing="-0.2">digital</text>
+    <text x="82" y="50" font-size="18" font-weight="600" letter-spacing="-0.2">treasury</text>
+  </g>
+</svg>

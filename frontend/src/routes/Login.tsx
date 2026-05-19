@@ -1,19 +1,43 @@
+import { GoogleG } from "@/components/ui/Icon";
 import { API_BASE } from "@/lib/http";
 
 export function Login() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <div className="w-full max-w-sm rounded-lg border bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-semibold">Content Generation Platform</h1>
-        <p className="mb-6 mt-1 text-sm text-slate-500">
-          Sign in with your digitaltreasury.com.au Google account.
+    <div className="login-bg">
+      <div className="login">
+        <div className="login__brand">
+          <img src="/logo.svg" alt="Digital Treasury" />
+          <span className="login__product">Content Studio</span>
+        </div>
+
+        <h1 className="login__h">
+          Sign in to <span className="dt-highlight">Content Studio.</span>
+        </h1>
+        <p className="login__p">
+          An internal tool for the Digital Treasury team. Use your{" "}
+          <strong style={{ color: "var(--ink-1)" }}>
+            @digitaltreasury.com.au
+          </strong>{" "}
+          Google account.
         </p>
+
         <a
           href={`${API_BASE}/api/v1/auth/login`}
-          className="block rounded-md bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
+          className="login__btn"
+          style={{ textDecoration: "none" }}
         >
-          Sign in with Google
+          <span className="login__google-mark">
+            <GoogleG />
+          </span>
+          <span>Sign in with Google</span>
         </a>
+
+        <div className="login__foot">
+          Restricted to{" "}
+          <strong style={{ color: "var(--ink-3)", fontWeight: 600 }}>
+            @digitaltreasury.com.au
+          </strong>
+        </div>
       </div>
     </div>
   );

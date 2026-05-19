@@ -6,10 +6,11 @@ import { ClientForm } from "@/components/ClientForm";
 describe("ClientForm", () => {
   it("submits the entered values as a client payload", async () => {
     const onSubmit = vi.fn();
-    render(<ClientForm onSubmit={onSubmit} submitting={false} />);
+    const { container } = render(<ClientForm onSubmit={onSubmit} />);
 
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Acme" } });
-    fireEvent.click(screen.getByRole("button", { name: /save client/i }));
+    const form = container.querySelector("form");
+    if (form) fireEvent.submit(form);
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: "Acme" });
@@ -17,9 +18,10 @@ describe("ClientForm", () => {
 
   it("blocks submission when the name is empty", async () => {
     const onSubmit = vi.fn();
-    render(<ClientForm onSubmit={onSubmit} submitting={false} />);
+    const { container } = render(<ClientForm onSubmit={onSubmit} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /save client/i }));
+    const form = container.querySelector("form");
+    if (form) fireEvent.submit(form);
 
     await screen.findByText(/name is required/i);
     expect(onSubmit).not.toHaveBeenCalled();

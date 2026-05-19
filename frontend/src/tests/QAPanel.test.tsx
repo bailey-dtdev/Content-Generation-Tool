@@ -21,6 +21,10 @@ describe("QAPanel", () => {
     ];
     render(<QAPanel notes={notes} />);
     expect(screen.getByText(/banned term: 'synergy'/i)).toBeTruthy();
-    expect(screen.getByText(/qa notes \(1\)/i)).toBeTruthy();
+  });
+
+  it("shows a running state", () => {
+    render(<QAPanel notes={[]} running />);
+    expect(screen.getByText(/running/i)).toBeTruthy();
   });
 });

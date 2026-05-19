@@ -1,36 +1,30 @@
-import type { ReactNode } from "react";
-
 import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
+import { Icon } from "@/components/ui/Icon";
+
 const HEADING_LEVELS = [1, 2, 3, 4] as (1 | 2 | 3 | 4)[];
 
-function ToolbarButton({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded px-2 py-1 text-xs ${
-        active ? "bg-slate-900 text-white" : "hover:bg-slate-100"
-      }`}
-    >
-      {children}
-    </button>
-  );
+function blockValue(editor: Editor): string {
+  for (const level of HEADING_LEVELS) {
+    if (editor.isActive("heading", { level })) return `h${level}`;
+  }
+  return "p";
 }
 
 function Toolbar({ editor }: { editor: Editor }) {
-  const editLink = () => {
+  const setBlock = (value: string) => {
+    const chain = editor.chain().focus();
+    if (value === "p") {
+      chain.setParagraph().run();
+    } else {
+      chain.setHeading({ level: Number(value.slice(1)) as 1 | 2 | 3 | 4 }).run();
+    }
+  };
+
+  const setLink = () => {
     const current = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Link URL", current ?? "");
     if (url === null) return;
@@ -42,56 +36,76 @@ function Toolbar({ editor }: { editor: Editor }) {
     }
   };
 
+  const text = editor.getText().trim();
+  const words = text ? text.split(/\s+/).length : 0;
+
   return (
-    <div className="flex flex-wrap gap-1 border-b p-1">
-      {HEADING_LEVELS.map((level) => (
-        <ToolbarButton
-          key={level}
-          active={editor.isActive("heading", { level })}
-          onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-        >
-          H{level}
-        </ToolbarButton>
-      ))}
-      <ToolbarButton
-        active={editor.isActive("paragraph")}
-        onClick={() => editor.chain().focus().setParagraph().run()}
+    <div className="editor-toolbar">
+      <select
+        className="editor-toolbar__select"
+        value={blockValue(editor)}
+        onChange={(event) => setBlock(event.target.value)}
+        aria-label="Block type"
       >
-        P
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive("bold")}
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="h4">Heading 4</option>
+        <option value="p">Paragraph</option>
+      </select>
+      <div className="editor-toolbar__sep" />
+      <button
+        type="button"
+        title="Bold"
+        className={editor.isActive("bold") ? "is-active" : ""}
         onClick={() => editor.chain().focus().toggleBold().run()}
       >
-        B
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive("italic")}
+        <Icon name="bold" size={14} />
+      </button>
+      <button
+        type="button"
+        title="Italic"
+        className={editor.isActive("italic") ? "is-active" : ""}
         onClick={() => editor.chain().focus().toggleItalic().run()}
       >
-        I
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive("underline")}
+        <Icon name="italic" size={14} />
+      </button>
+      <button
+        type="button"
+        title="Underline"
+        className={editor.isActive("underline") ? "is-active" : ""}
         onClick={() => editor.chain().focus().toggleUnderline().run()}
       >
-        U
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive("bulletList")}
+        <Icon name="underline" size={14} />
+      </button>
+      <div className="editor-toolbar__sep" />
+      <button
+        type="button"
+        title="Bullet list"
+        className={editor.isActive("bulletList") ? "is-active" : ""}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
-        • List
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive("orderedList")}
+        <Icon name="list-ul" size={14} />
+      </button>
+      <button
+        type="button"
+        title="Numbered list"
+        className={editor.isActive("orderedList") ? "is-active" : ""}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
-        1. List
-      </ToolbarButton>
-      <ToolbarButton active={editor.isActive("link")} onClick={editLink}>
-        Link
-      </ToolbarButton>
+        <Icon name="list-ol" size={14} />
+      </button>
+      <div className="editor-toolbar__sep" />
+      <button
+        type="button"
+        title="Link"
+        className={editor.isActive("link") ? "is-active" : ""}
+        onClick={setLink}
+      >
+        <Icon name="link" size={14} />
+      </button>
+      <div style={{ flex: 1 }} />
+      <span style={{ fontSize: 11, color: "var(--ink-5)" }}>{words} words</span>
     </div>
   );
 }
@@ -123,9 +137,9 @@ export function ContentEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border bg-white">
+    <>
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} className="px-3 py-2 text-sm text-slate-800" />
-    </div>
+      <EditorContent editor={editor} />
+    </>
   );
 }

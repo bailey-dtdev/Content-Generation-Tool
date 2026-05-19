@@ -3,7 +3,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { ClientCreate, ClientResponse } from "@/api/generated";
-import { Field, inputClass } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+
+export const CLIENT_FORM_ID = "client-form";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -52,15 +54,14 @@ function toPayload(values: FormValues): ClientCreate {
 export function ClientForm({
   client,
   onSubmit,
-  submitting,
 }: {
   client?: ClientResponse;
   onSubmit: (payload: ClientCreate) => void | Promise<void>;
-  submitting: boolean;
 }) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -82,64 +83,133 @@ export function ClientForm({
     },
   });
 
+  const oxfordComma = watch("oxford_comma");
+
   return (
     <form
+      id={CLIENT_FORM_ID}
       onSubmit={handleSubmit((values) => onSubmit(toPayload(values)))}
-      className="space-y-4"
+      style={{ display: "flex", flexDirection: "column", gap: 20 }}
     >
-      <Field label="Name" error={errors.name?.message}>
-        <input className={inputClass} {...register("name")} />
-      </Field>
-      <Field label="Industry">
-        <input className={inputClass} {...register("industry")} />
-      </Field>
-      <Field label="Website URL">
-        <input className={inputClass} {...register("website_url")} />
-      </Field>
-      <Field label="Brand voice">
-        <textarea rows={3} className={inputClass} {...register("brand_voice")} />
-      </Field>
-      <Field label="Audience">
-        <textarea rows={3} className={inputClass} {...register("audience")} />
-      </Field>
-      <Field label="E-E-A-T signals">
-        <textarea rows={3} className={inputClass} {...register("eeat_signals")} />
-      </Field>
-      <Field label="Language variant">
-        <select className={inputClass} {...register("language_variant")}>
-          <option value="en-AU">Australian English</option>
-          <option value="en-US">US English</option>
-          <option value="en-GB">UK English</option>
-        </select>
-      </Field>
-      <Field label="Reading level target">
-        <input className={inputClass} {...register("reading_level_target")} />
-      </Field>
-      <Field label="Sentence length preference">
-        <select className={inputClass} {...register("sentence_length_preference")}>
-          <option value="">No preference</option>
-          <option value="short">Short</option>
-          <option value="mixed">Mixed</option>
-          <option value="longer">Longer</option>
-        </select>
-      </Field>
-      <Field label="Banned words (one per line)">
-        <textarea rows={3} className={inputClass} {...register("banned_words")} />
-      </Field>
-      <Field label="Approved phrases (one per line)">
-        <textarea rows={3} className={inputClass} {...register("approved_phrases")} />
-      </Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...register("oxford_comma")} />
-        <span>Use the Oxford comma</span>
-      </label>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-      >
-        {submitting ? "Saving…" : "Save client"}
-      </button>
+      <div className="card">
+        <div className="card__head">
+          <div>
+            <div className="card__title">Identity</div>
+            <div className="card__sub">
+              Name, industry, and where their site lives.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <Field label="Name" required error={errors.name?.message}>
+            <input className="input" {...register("name")} />
+          </Field>
+          <Field label="Industry">
+            <input className="input" {...register("industry")} />
+          </Field>
+          <Field label="Website URL" hint="Used for E-E-A-T and internal links">
+            <input className="input" {...register("website_url")} />
+          </Field>
+          <Field label="Language variant">
+            <select className="select" {...register("language_variant")}>
+              <option value="en-AU">Australian English</option>
+              <option value="en-US">US English</option>
+              <option value="en-GB">UK English</option>
+            </select>
+          </Field>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card__head">
+          <div>
+            <div className="card__title">Voice &amp; audience</div>
+            <div className="card__sub">
+              Anchors the model's tone and reading-level decisions.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Field label="Brand voice" hint="3-5 sentences">
+            <textarea className="textarea" rows={4} {...register("brand_voice")} />
+          </Field>
+          <Field label="Audience">
+            <textarea className="textarea" rows={3} {...register("audience")} />
+          </Field>
+          <Field
+            label="E-E-A-T signals"
+            hint="Experience, expertise, authority, trust"
+          >
+            <textarea className="textarea" rows={3} {...register("eeat_signals")} />
+          </Field>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card__head">
+          <div>
+            <div className="card__title">Style rules</div>
+            <div className="card__sub">
+              Hard constraints applied during generation and QA.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <Field label="Reading level target">
+            <input
+              className="input"
+              placeholder="e.g. Grade 8"
+              {...register("reading_level_target")}
+            />
+          </Field>
+          <Field label="Sentence length">
+            <select className="select" {...register("sentence_length_preference")}>
+              <option value="">No preference</option>
+              <option value="short">Short</option>
+              <option value="mixed">Mixed</option>
+              <option value="longer">Longer</option>
+            </select>
+          </Field>
+          <Field label="Banned words" hint="One per line">
+            <textarea className="textarea" rows={4} {...register("banned_words")} />
+          </Field>
+          <Field label="Approved phrases" hint="One per line">
+            <textarea
+              className="textarea"
+              rows={4}
+              {...register("approved_phrases")}
+            />
+          </Field>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: "1px solid var(--ink-8)",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Oxford comma</div>
+            <div style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 2 }}>
+              Apply consistently across all sections.
+            </div>
+          </div>
+          <label className={`toggle ${oxfordComma ? "is-on" : ""}`}>
+            <input
+              type="checkbox"
+              {...register("oxford_comma")}
+              style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+            />
+            <span className="toggle__track">
+              <span className="toggle__thumb" />
+            </span>
+            <span className="toggle__label">{oxfordComma ? "On" : "Off"}</span>
+          </label>
+        </div>
+      </div>
     </form>
   );
 }
