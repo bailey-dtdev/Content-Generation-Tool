@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Content Studio — Design</title>
+  <meta name="viewport" content="width=1480" />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; font-family: 'Inter', system-ui, sans-serif; }
+    /* design canvas overrides */
+    .dc-section .artboard-host { box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06); }
+  </style>
+</head>
+<body data-screen-label="Content Studio — Design canvas">
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens-auth.jsx"></script>
+  <script type="text/babel" src="screens-clients.jsx"></script>
+  <script type="text/babel" src="screens-generation.jsx"></script>
+  <script type="text/babel" src="screens-content.jsx"></script>
+  <script type="text/babel" src="screens-usage.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "density": "comfortable",
+      "workspace": "light",
+      "qaPosition": "right"
+    }/*EDITMODE-END*/;
+
+    const W = 1440;
+    const H = 920;
+    const HTall = 1180;
+    const HXtall = 1380;
+
+    const App = () => {
+      const t = useTweaks ? useTweaks(TWEAK_DEFAULTS) : { tweaks: TWEAK_DEFAULTS, setTweak: () => {} };
+      const tweaks = t.tweaks || TWEAK_DEFAULTS;
+      const setTweak = t.setTweak;
+      const density = tweaks.density;
+      const workspace = tweaks.workspace;
+      const qaPosition = tweaks.qaPosition;
+
+      return (
+        <>
+          <DesignCanvas>
+            {/* ───────── Sign in ───────── */}
+            <DCSection id="auth" title="01 — Sign in" subtitle="Single Google SSO restricted to @digitaltreasury.com.au. Standalone, no shell.">
+              <DCArtboard id="login-default" label="Default" width={W} height={H}>
+                <LoginScreen />
+              </DCArtboard>
+              <DCArtboard id="login-rejected" label="Rejected domain" width={W} height={H}>
+                <LoginScreen rejected />
+              </DCArtboard>
+            </DCSection>
+
+            {/* ───────── Clients ───────── */}
+            <DCSection id="clients" title="02 — Clients" subtitle="Post-login landing. Each client's content profile + sitemap.">
+              <DCArtboard id="client-list" label="List · populated" width={W} height={H}>
+                <ClientListScreen state="populated" />
+              </DCArtboard>
+              <DCArtboard id="client-empty" label="Empty state" width={W} height={H}>
+                <ClientListScreen state="empty" />
+              </DCArtboard>
+              <DCArtboard id="client-loading" label="Loading" width={W} height={H}>
+                <ClientListScreen state="loading" />
+              </DCArtboard>
+              <DCArtboard id="client-new" label="New client" width={W} height={HTall}>
+                <ClientEditScreen mode="new" />
+              </DCArtboard>
+              <DCArtboard id="client-edit" label="Edit · with sitemap" width={W} height={HXtall}>
+                <ClientEditScreen mode="edit" />
+              </DCArtboard>
+            </DCSection>
+
+            {/* ───────── New generation ───────── */}
+            <DCSection id="newgen" title="03 — New generation" subtitle="Input step. Persistent wizard stepper begins here.">
+              <DCArtboard id="newgen" label="Input form" width={W} height={HTall}>
+                <NewGenerationScreen />
+              </DCArtboard>
+            </DCSection>
+
+            {/* ───────── Outline review ───────── */}
+            <DCSection id="outline" title="04 — Outline review" subtitle="Drag-reorderable section plan with research summary.">
+              <DCArtboard id="outline-pre" label="Pre-generate" width={W} height={H}>
+                <OutlineScreen state="pre" />
+              </DCArtboard>
+              <DCArtboard id="outline-gen" label="Generated · editable" width={W} height={HTall}>
+                <OutlineScreen state="generated" />
+              </DCArtboard>
+              <DCArtboard id="outline-err" label="Error · in-progress collision" width={W} height={H}>
+                <OutlineScreen state="error" />
+              </DCArtboard>
+            </DCSection>
+
+            {/* ───────── Content workspace — centerpiece ───────── */}
+            <DCSection id="content" title="05 — Content workspace · centerpiece" subtitle="Streaming editor + QA. Six states. Tweaks panel (bottom-right) re-themes the editable + QA-results artboards.">
+              <DCArtboard id="content-empty" label="Empty · ready to generate" width={W} height={H}>
+                <ContentWorkspaceScreen state="empty" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-streaming" label="Streaming · section 3 of 7" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="streaming" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-editable" label="Generated · editable" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="editable" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-qa-running" label="QA running" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="qa-running" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-qa-results" label="QA results · 8 notes" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="qa-results" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-section-err" label="Section retry" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="section-error" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+              <DCArtboard id="content-exported" label="Exported to Google Docs" width={W} height={HXtall}>
+                <ContentWorkspaceScreen state="exported" density={density} workspace={workspace} qaPosition={qaPosition} />
+              </DCArtboard>
+            </DCSection>
+
+            {/* ───────── Usage ───────── */}
+            <DCSection id="usage" title="06 — Usage dashboard" subtitle="Your spend, organisation spend, breakdown by client and user.">
+              <DCArtboard id="usage" label="Default" width={W} height={HTall}>
+                <UsageScreen />
+              </DCArtboard>
+            </DCSection>
+          </DesignCanvas>
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection title="Workspace theme">
+              <TweakRadio
+                label="Density"
+                value={density}
+                onChange={(v) => setTweak('density', v)}
+                options={[
+                  { value: 'comfortable', label: 'Comfortable' },
+                  { value: 'compact', label: 'Compact' },
+                ]}
+              />
+              <TweakRadio
+                label="Editor"
+                value={workspace}
+                onChange={(v) => setTweak('workspace', v)}
+                options={[
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: 'Dark' },
+                ]}
+              />
+              <TweakRadio
+                label="QA panel"
+                value={qaPosition}
+                onChange={(v) => setTweak('qaPosition', v)}
+                options={[
+                  { value: 'right', label: 'Right rail' },
+                  { value: 'inline', label: 'Inline only' },
+                ]}
+              />
+            </TweakSection>
+            <TweakSection title="Affects">
+              <div style={{ fontSize: 11.5, color: 'rgba(0,0,0,0.55)', lineHeight: 1.5 }}>
+                These re-theme the Content Workspace artboards in section 05 — editable, QA running, QA results, section retry, and exported.
+              </div>
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
