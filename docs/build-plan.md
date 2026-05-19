@@ -84,7 +84,7 @@ Update this as phases land. `[ ]` not started, `[~]` in progress, `[x]` done.
 - [x] **Phase 13** — Cost tracking & dashboards
 - [x] **Phase 14** — CI/CD
 - [x] **Phase 15** — Production deploy
-- [ ] **Phase 16** — Observability
+- [x] **Phase 16** — Observability
 
 ---
 
